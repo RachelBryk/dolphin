@@ -246,6 +246,10 @@ void SConfig::SaveSettings()
 	// GFX Backend
 	ini.Set("Core", "GFXBackend",	m_LocalCoreStartupParameter.m_strVideoBackend);
 
+	// Movie
+	ini.Set("Movie", "PauseMovie", m_PauseMovie);
+	ini.Set("Movie", "Author", m_strMovieAuthor);
+
 	ini.Save(File::GetUserPath(F_DOLPHINCONFIG_IDX));
 	m_SYSCONF->Save();
 }
@@ -384,6 +388,10 @@ void SConfig::LoadSettings()
 
 		// GFX Backend
 		ini.Get("Core", "GFXBackend",  &m_LocalCoreStartupParameter.m_strVideoBackend, "");
+
+		// Movie
+		ini.Get("Movie", "PauseMovie", &m_PauseMovie, false);
+		ini.Get("Movie", "Author", &m_strMovieAuthor, "");
 	}
 
 	m_SYSCONF = new SysConf();

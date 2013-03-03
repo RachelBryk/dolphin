@@ -76,6 +76,9 @@ struct SConfig : NonCopyable
 	bool m_ListTaiwan;
 	bool m_ListUnknown;
 
+	bool m_PauseMovie;
+	std::string	m_strMovieAuthor;
+
 	SysConf* m_SYSCONF;
 
 	// save settings

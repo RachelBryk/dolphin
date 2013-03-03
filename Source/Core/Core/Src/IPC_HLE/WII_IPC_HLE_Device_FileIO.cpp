@@ -363,7 +363,33 @@ bool CWII_IPC_HLE_Device_FileIO::IOCtl(u32 _CommandAddress)
 
 void CWII_IPC_HLE_Device_FileIO::DoState(PointerWrap &p)
 {
-	p.Do(m_Mode);
 	p.Do(m_SeekPos);
 	p.Do(m_Filename);
+	DoStateShared(p);
+
+	bool have_file_handle = (m_pFileHandle != 0);
+	s32 seek = (have_file_handle) ? (s32)m_pFileHandle.Tell() : 0;
+
+	p.Do(have_file_handle);
+	p.Do(m_Mode);
+	p.Do(seek);
+
+	if (p.GetMode() == PointerWrap::MODE_READ)
+	{
+		int mode = m_Mode;
+		bool active = m_Active;
+		if (have_file_handle)
+		{
+			// TODO: isn't it naive and error-prone to assume that the file hasn't changed since we created the savestate?
+			Open(0, m_Mode);
+			_dbg_assert_msg_(WII_IPC_HLE, m_pFileHandle, "bad filehandle");
+		}
+		else
+			Close(0, true);
+		m_Mode = mode;
+		m_Active = active;
+	}
+
+	if (have_file_handle)
+		m_pFileHandle.Seek(seek, SEEK_SET);
 }
