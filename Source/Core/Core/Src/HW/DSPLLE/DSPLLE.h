@@ -41,6 +41,7 @@ public:
 	virtual unsigned short DSP_ReadControlRegister();
 	virtual unsigned short DSP_WriteControlRegister(unsigned short);
 	virtual void DSP_SendAIBuffer(unsigned int address, unsigned int num_samples);
+	virtual const short *DSP_PeekAIBuffer (unsigned int address, unsigned int num_samples);
 	virtual void DSP_Update(int cycles);
 	virtual void DSP_StopSoundStream();
 	virtual void DSP_ClearAudioBuffer(bool mute);

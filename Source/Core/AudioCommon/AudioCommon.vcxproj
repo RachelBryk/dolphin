@@ -181,6 +181,7 @@
     <ClCompile Include="Src\AOSoundStream.cpp" />
     <ClCompile Include="Src\AudioCommon.cpp" />
     <ClCompile Include="Src\AudioCommonConfig.cpp" />
+    <ClCompile Include="Src\AudioDumper.cpp" />
     <ClCompile Include="Src\DSoundStream.cpp" />
     <ClCompile Include="Src\Mixer.cpp" />
     <ClCompile Include="Src\NullSoundStream.cpp" />
@@ -200,6 +201,7 @@
     <ClInclude Include="Src\AOSoundStream.h" />
     <ClInclude Include="Src\AudioCommon.h" />
     <ClInclude Include="Src\AudioCommonConfig.h" />
+    <ClInclude Include="Src\AudioDumper.h" />
     <ClInclude Include="Src\DSoundStream.h" />
     <ClInclude Include="Src\Mixer.h" />
     <ClInclude Include="Src\NullSoundStream.h" />

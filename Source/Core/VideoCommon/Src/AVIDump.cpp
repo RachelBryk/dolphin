@@ -23,6 +23,9 @@
 #include "HW/VideoInterface.h" //for TargetRefreshRate
 #include "VideoConfig.h"
 
+#include "..\..\AudioCommon\Src\AudioCommon.h" // for m_DumpAudioToAVI
+#include "..\..\Core\Src\ConfigManager.h" // for EuRGB60
+
 #ifdef _WIN32
 
 #include "tchar.h"
@@ -39,17 +42,25 @@
 HWND m_emuWnd;
 LONG m_byteBuffer;
 LONG m_frameCount;
+LONG m_frameCountNoSplit; // tracks across 2gig splits
 LONG m_totalBytes;
 PAVIFILE m_file;
 int m_width;
 int m_height;
 int m_fileCount;
+int m_samplesSound;
 PAVISTREAM m_stream;
 PAVISTREAM m_streamCompressed;
+PAVISTREAM m_streamSound;
+int framerate;
+
 AVISTREAMINFO m_header;
+AVISTREAMINFO m_soundHeader;
 AVICOMPRESSOPTIONS m_options;
 AVICOMPRESSOPTIONS *m_arrayOptions[1];
 BITMAPINFOHEADER m_bitmap;
+std::FILE *timecodes;
+
 
 bool AVIDump::Start(HWND hWnd, int w, int h)
 {
@@ -59,6 +70,26 @@ bool AVIDump::Start(HWND hWnd, int w, int h)
 	m_width = w;
 	m_height = h;
 
+	m_frameCountNoSplit = 0;
+
+	if (SConfig::GetInstance().m_SYSCONF->GetData<u8>("IPL.E60"))
+		framerate = 60; // always 60, for either pal60 or ntsc
+	else
+		framerate = VideoInterface::TargetRefreshRate; // 50 or 60, depending on region
+
+	if (!ac_Config.m_DumpAudioToAVI)
+	{
+		timecodes = std::fopen ((File::GetUserPath (D_DUMPFRAMES_IDX) + "timecodes.txt").c_str (), "w");
+		if (!timecodes)
+			return false;
+		std::fprintf (timecodes, "# timecode format v2\n");
+	}
+
+	// clear CFR frame cache on start, not on file create (which is also segment switch)
+	SetBitmapFormat ();
+	if (ac_Config.m_DumpAudioToAVI)
+		StoreFrame (NULL);
+
 	return CreateFile();
 }
 
@@ -66,6 +97,7 @@ bool AVIDump::CreateFile()
 {
 	m_totalBytes = 0;
 	m_frameCount = 0;
+	m_samplesSound = 0;
 	char movie_file_name[255];
 	sprintf(movie_file_name, "%sframedump%d.avi", File::GetUserPath(D_DUMPFRAMES_IDX).c_str(), m_fileCount);
 	// Create path
@@ -94,6 +126,7 @@ bool AVIDump::CreateFile()
 	}
 
 	SetBitmapFormat();
+
 	NOTICE_LOG(VIDEO, "Setting video format...");
 	if (!SetVideoFormat())
 	{
@@ -124,11 +157,48 @@ bool AVIDump::CreateFile()
 		return false;
 	}
 
+	if (ac_Config.m_DumpAudioToAVI)
+	{
+		WAVEFORMATEX wfex;
+		wfex.cbSize = sizeof (wfex);
+		wfex.nAvgBytesPerSec = 48000 * 4;
+		wfex.nBlockAlign = 4;
+		wfex.nChannels = 2;
+		wfex.nSamplesPerSec = 48000;
+		wfex.wBitsPerSample = 16;
+		wfex.wFormatTag = WAVE_FORMAT_PCM;
+
+		ZeroMemory (&m_soundHeader, sizeof (AVISTREAMINFO));
+        m_soundHeader.fccType         = streamtypeAUDIO;
+        m_soundHeader.dwQuality       = (DWORD)-1;
+        m_soundHeader.dwScale         = wfex.nBlockAlign;
+        m_soundHeader.dwInitialFrames = 1;
+        m_soundHeader.dwRate       = wfex.nAvgBytesPerSec;
+        m_soundHeader.dwSampleSize = wfex.nBlockAlign;
+
+		if (FAILED(AVIFileCreateStream (m_file, &m_streamSound, &m_soundHeader)))
+		{
+			NOTICE_LOG(VIDEO, "AVIFileCreateStream failed (sound)");
+			Stop();
+			return false;
+		}
+        if (FAILED(AVIStreamSetFormat(m_streamSound, 0, &wfex, sizeof(WAVEFORMATEX))))
+		{
+			NOTICE_LOG(VIDEO, "AVIStreamSetFormat failed (sound)");
+			Stop();
+			return false;
+		}
+	}
 	return true;
 }
 
 void AVIDump::CloseFile()
 {
+	if (timecodes)
+	{
+		std::fclose (timecodes);
+		timecodes = 0;
+	}
 	if (m_streamCompressed)
 	{
 		AVIStreamClose(m_streamCompressed);
@@ -139,6 +209,12 @@ void AVIDump::CloseFile()
 	{
 		AVIStreamClose(m_stream);
 		m_stream = NULL;
+	}
+
+	if (m_streamSound)
+	{
+		AVIStreamClose (m_streamSound);
+		m_streamSound = NULL;
 	}
 
 	if (m_file)
@@ -152,22 +228,262 @@ void AVIDump::CloseFile()
 
 void AVIDump::Stop()
 {
+	// flush any leftover sound data
+	if (m_streamSound)
+		AddSoundInternal (NULL, 0);
+	// store one copy of the last video frame, CFR case
+	if (ac_Config.m_DumpAudioToAVI && m_streamCompressed)
+		AVIStreamWrite(m_streamCompressed, m_frameCount++, 1, GetFrame (), m_bitmap.biSizeImage, AVIIF_KEYFRAME, NULL, &m_byteBuffer);
+
 	CloseFile();
 	m_fileCount = 0;
 	NOTICE_LOG(VIDEO, "Stop");
 }
 
+// DUMP HACK
+#include "CoreTiming.h"
+#include "HW\SystemTimers.h"
+
+void AVIDump::AddSoundBE (const short *data, int nsamp, int rate)
+{
+	/* do these checks in AddSound
+	if (!m_streamSound)
+		return;
+	*/
+
+	static short *buff = NULL;
+	static int nsampf = 0;
+	if (nsampf < nsamp)
+	{
+		buff = (short *) realloc (buff, nsamp * 4);
+		nsampf = nsamp;
+	}
+	if (buff)
+	{
+		for (int i = 0; i < nsamp * 2; i++)
+			buff[i] = Common::swap16 (data[i]);
+		AVIDump::AddSound (buff, nsamp, rate);
+	}
+}
+
+// interleave is extra big (10s) because the buffer must be able to store potentially quite a bit of data,
+// audio before the video dump starts
+const int soundinterleave = 480000;
+
+void AVIDump::AddSoundInternal (const short *data, int nsamp)
+{
+	// each write to avi takes packet overhead.  so writing every 8 samples wastes lots of space
+	static short *buff = NULL;
+	if (!buff)
+		buff = (short *) malloc (soundinterleave * 4);
+	if (!buff)
+		return;
+
+	static int buffpos = 0;
+
+	if (data)
+	{
+		while (nsamp)
+		{
+			while (buffpos < soundinterleave * 2 && nsamp)
+			{
+				buff[buffpos++] = *data++;
+				buff[buffpos++] = *data++;
+				nsamp--;
+			}
+			if (buffpos == soundinterleave * 2)
+			{
+				if (m_streamSound)
+					AVIStreamWrite (m_streamSound, m_samplesSound, soundinterleave, buff, soundinterleave * 4, 0, NULL, &m_byteBuffer);
+				else
+					; // audio stream should have been ready by now, nothing to be done
+				
+				m_totalBytes += m_byteBuffer;
+				m_samplesSound += soundinterleave;
+				buffpos = 0;
+			}
+		}
+	}
+	else if (buffpos)// data = NULL: flush
+	{
+		if (m_streamSound)
+			AVIStreamWrite (m_streamSound, m_samplesSound, buffpos / 2, buff, buffpos * 2, 0, NULL, &m_byteBuffer);
+		else
+			; // shouldn't happen?
+		m_totalBytes += m_byteBuffer;
+		m_samplesSound += buffpos / 2;
+		buffpos = 0;
+	}
+
+}
+
+
+void AVIDump::AddSound (const short *data, int nsamp, int rate)
+{
+	/* can't do this.  when dumping sound to avi, the first sound can arrive before the video stream is prepped
+	if (!m_streamSound) */
+	if (!g_ActiveConfig.bDumpFrames)
+		return;
+
+	static short *buff = NULL;
+	static int nsampf = 0;
+
+	static short old[2] = {0, 0};
+
+	// resample
+	if (rate == 32000)
+	{
+		if (nsamp % 2)
+			return;
+
+		// 2->3
+		if (nsampf < nsamp * 3 / 2)
+		{
+			buff = (short *) realloc (buff, nsamp * 3 / 2 * 4);
+			nsampf = nsamp * 3 / 2;
+		}
+		if (!buff)
+			return;
+
+		for (int i = 0; i < nsamp / 2; i++)
+		{
+			buff[6 * i + 0] = (int) data[4 * i + 0] * 2 / 3 + old[0] * 1 / 3;
+			buff[6 * i + 1] = (int) data[4 * i + 1] * 2 / 3 + old[1] * 1 / 3;
+			buff[6 * i + 2] = (int) data[4 * i + 0] * 2 / 3 + data[4 * i + 2] * 1 / 3;
+			buff[6 * i + 3] = (int) data[4 * i + 1] * 2 / 3 + data[4 * i + 3] * 1 / 3;
+			buff[6 * i + 4] = data[4 * i + 2];
+			buff[6 * i + 5] = data[4 * i + 3];
+
+			old[0] = data[4 * i + 2];
+			old[1] = data[4 * i + 3];
+		}
+
+		nsamp = nsamp * 3 / 2;
+		data = buff;
+	}
+
+	AddSoundInternal (data, nsamp);
+
+}
+
+// the CFR dump design doesn't let you dump until you know the NEXT timecode.
+// so we have to save a frame and always be behind
+
+void *storedframe = 0;
+unsigned storedframesz = 0;
+
+
+void AVIDump::StoreFrame (const void *data)
+{
+	if (m_bitmap.biSizeImage > storedframesz)
+	{
+		storedframe = realloc (storedframe, m_bitmap.biSizeImage);
+		storedframesz = m_bitmap.biSizeImage;
+		memset (storedframe, 0, m_bitmap.biSizeImage);
+	}
+	if (storedframe)
+	{
+		if (data)
+			memcpy (storedframe, data, m_bitmap.biSizeImage);
+		else // pitch black frame
+			memset (storedframe, 0, m_bitmap.biSizeImage);
+	}
+
+}
+
+void *AVIDump::GetFrame (void)
+{
+	return storedframe;
+}
+
+
 void AVIDump::AddFrame(char *data)
 {
-	AVIStreamWrite(m_streamCompressed, ++m_frameCount, 1, (LPVOID) data, m_bitmap.biSizeImage, AVIIF_KEYFRAME, NULL, &m_byteBuffer);
-	m_totalBytes += m_byteBuffer;
-	// Close the recording if the file is more than 2gb
-	// VfW can't properly save files over 2gb in size, but can keep writing to them up to 4gb.
-	if (m_totalBytes >= 2000000000)
+
+	if (!ac_Config.m_DumpAudioToAVI)
 	{
-		CloseFile();
-		m_fileCount++;
-		CreateFile();
+		// write timecode
+		u64 now = CoreTiming::GetTicks ();
+
+		u64 persec = SystemTimers::GetTicksPerSecond ();
+
+
+		u64 num = now * 1000 / persec;
+
+		now -= num * (persec / 1000);
+
+		u64 den = ((now * 1000000000 + persec / 2) / persec) % 1000000;
+
+		std::fprintf (timecodes, "%I64u.%06I64u\n", num, den);
+
+
+		AVIStreamWrite(m_streamCompressed, m_frameCount++, 1, (LPVOID) data, m_bitmap.biSizeImage, AVIIF_KEYFRAME, NULL, &m_byteBuffer);
+		m_totalBytes += m_byteBuffer;
+		// Close the recording if the file is more than 2gb
+		// VfW can't properly save files over 2gb in size, but can keep writing to them up to 4gb.
+		if (m_totalBytes >= 2000000000)
+		{
+			CloseFile();
+			m_fileCount++;
+			CreateFile();
+		}
+		
+	}
+	else
+	{
+		static std::FILE *fff = 0;
+		
+		if (!fff)
+		{
+			fff = fopen ("cfrdbg.txt", "w");
+			fprintf (fff, "now,oneCFR,CFRstart\n");
+		}
+		
+		// no timecodes, instead dump each frame as many/few times as needed to keep sync
+
+		u64 now = CoreTiming::GetTicks ();
+		fprintf (fff, "%I64u,", now);
+
+		u64 oneCFR = SystemTimers::GetTicksPerSecond () / framerate;
+
+		fprintf (fff, "%I64u,", oneCFR);
+
+		u64 CFRstart = oneCFR * m_frameCountNoSplit;
+
+		fprintf (fff,"%I64u\n", CFRstart);
+
+		int nplay = 0;
+
+		s64 delta = now - CFRstart;
+
+		// try really hard to place one copy of frame in stream (otherwise it's dropped)
+		if (delta > (s64) oneCFR * 3 / 10) // place if 3/10th of a frame space
+		{
+			delta -= oneCFR;
+			nplay++;
+		}
+		// try not nearly so hard to place additional copies of the frame
+		while (delta > (s64) oneCFR * 8 / 10) // place if 8/10th of a frame space
+		{
+			delta -= oneCFR;
+			nplay++;
+		}
+
+		while (nplay--)
+		{
+			m_frameCountNoSplit++;
+			AVIStreamWrite(m_streamCompressed, m_frameCount++, 1, GetFrame (), m_bitmap.biSizeImage, AVIIF_KEYFRAME, NULL, &m_byteBuffer);
+			m_totalBytes += m_byteBuffer;
+			// Close the recording if the file is more than 2gb
+			// VfW can't properly save files over 2gb in size, but can keep writing to them up to 4gb.
+			if (m_totalBytes >= 2000000000)
+			{
+				CloseFile();
+				m_fileCount++;
+				CreateFile();
+			}
+		}
+		StoreFrame (data);
 	}
 }
 
@@ -195,7 +511,7 @@ bool AVIDump::SetVideoFormat()
 	memset(&m_header, 0, sizeof(m_header));
 	m_header.fccType = streamtypeVIDEO;
 	m_header.dwScale = 1;
-	m_header.dwRate = VideoInterface::TargetRefreshRate;
+	m_header.dwRate = framerate;
 	m_header.dwSuggestedBufferSize  = m_bitmap.biSizeImage;
 
 	return SUCCEEDED(AVIFileCreateStream(m_file, &m_stream, &m_header));

@@ -315,6 +315,12 @@ void DSPLLE::DSP_Update(int cycles)
 	}
 }
 
+const short *DSPLLE::DSP_PeekAIBuffer (unsigned int address, unsigned int num_samples)
+{
+	address &= (address & 0x10000000) ? 0x13ffffff : 0x01ffffff;
+	return (const short *) &g_dsp.cpu_ram[address];
+}
+
 void DSPLLE::DSP_SendAIBuffer(unsigned int address, unsigned int num_samples)
 {
 	if (!soundStream)
@@ -324,8 +330,7 @@ void DSPLLE::DSP_SendAIBuffer(unsigned int address, unsigned int num_samples)
 
 	if (pMixer && address)
 	{
-		address &= (address & 0x10000000) ? 0x13ffffff : 0x01ffffff;
-		const short *samples = (const short *)&g_dsp.cpu_ram[address];
+		const short *samples = DSP_PeekAIBuffer (address, num_samples);
 		pMixer->PushSamples(samples, num_samples);
 	}
 

@@ -48,8 +48,13 @@
 #include "../ConfigManager.h"
 #include "../DSPEmulator.h"
 
+#include "AudioDumper.h"
+#include "AudioCommon.h"
+#include "AVIDump.h"
+
 namespace DSP
 {
+	AudioDumper *HackDump;
 
 // register offsets
 enum
@@ -285,6 +290,9 @@ void Init(bool hle)
 	g_AR_REFRESH = 156; // 156MHz
 
 	et_GenerateDSPInterrupt = CoreTiming::RegisterEvent("DSPint", GenerateDSPInterrupt_Wrapper);
+
+	// AUDIO DUMP HACK
+	HackDump = new AudioDumper (std::string ("dspdump"));
 }
 
 void Shutdown()
@@ -296,6 +304,9 @@ void Shutdown()
 	dsp_emulator->Shutdown();
 	delete dsp_emulator;
 	dsp_emulator = NULL;
+
+	delete HackDump;
+	HackDump = 0;
 }
 
 void Read16(u16& _uReturnValue, const u32 _iAddress)
@@ -651,6 +662,31 @@ void UpdateDSPSlice(int cycles) {
 // This happens at 4 khz, since 32 bytes at 4khz = 4 bytes at 32 khz (16bit stereo pcm)
 void UpdateAudioDMA()
 {
+	/*
+	// AUDIO HACK LOGGING
+	static std::FILE *f2 = NULL;
+	if (!f2)
+	{
+		f2 = std::fopen ("dolphin_dmalog.txt", "w");
+		if (f2)
+			std::fprintf (f2, "cpu,cpudelta,arate,enabled,blocksleft\n");
+	}
+	if (f2)
+	{
+		static u64 lasttime = 0;
+		u64 cputime = CoreTiming::GetTicks ();
+		int audiorate = AudioInterface::GetAIDSampleRate ();
+		const char *enablec = g_audioDMA.AudioDMAControl.Enable ? "TRUE" : "FALSE";
+		int blockleft = g_audioDMA.BlocksLeft;
+		u64 diff = cputime - lasttime;
+
+		std::fprintf (f2, "%I64u,%I64u,%i,%s,%i\n", cputime, diff, audiorate, enablec, blockleft);
+		lasttime = cputime;
+	}
+	*/
+	static int oldrate = 32000;
+
+
 	if (g_audioDMA.AudioDMAControl.Enable && g_audioDMA.BlocksLeft)
 	{
 		// Read audio at g_audioDMA.ReadAddress in RAM and push onto an
@@ -663,18 +699,29 @@ void UpdateAudioDMA()
 
 		if (g_audioDMA.BlocksLeft == 0)
 		{
-			dsp_emulator->DSP_SendAIBuffer(g_audioDMA.SourceAddress, 8*g_audioDMA.AudioDMAControl.NumBlocks);
+			unsigned numsamples = 8*g_audioDMA.AudioDMAControl.NumBlocks;
+			if (ac_Config.m_DumpAudio)
+				HackDump->dumpsamplesBE (dsp_emulator->DSP_PeekAIBuffer (g_audioDMA.SourceAddress, numsamples), numsamples, oldrate);
+			if (ac_Config.m_DumpAudioToAVI)
+				AVIDump::AddSoundBE (dsp_emulator->DSP_PeekAIBuffer (g_audioDMA.SourceAddress, numsamples), numsamples, oldrate);
+			dsp_emulator->DSP_SendAIBuffer(g_audioDMA.SourceAddress, numsamples);
 			GenerateDSPInterrupt(DSP::INT_AID);
 			g_audioDMA.BlocksLeft = g_audioDMA.AudioDMAControl.NumBlocks;
 			g_audioDMA.ReadAddress = g_audioDMA.SourceAddress;
 		}
 	}
 	else
-	{
+	{	// numsamples = 8 always
+		const short blank[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+		if (ac_Config.m_DumpAudio)
+			HackDump->dumpsamples (blank, 8, oldrate);
+		if (ac_Config.m_DumpAudioToAVI)
+			AVIDump::AddSound (blank, 8, oldrate);
 		// Send silence. Yeah, it's a bit of a waste to sample rate convert
 		// silence.  or hm. Maybe we shouldn't do this :)
 		// dsp->DSP_SendAIBuffer(0, AudioInterface::GetDSPSampleRate());
 	}
+	oldrate = AudioInterface::GetAIDSampleRate ();
 }
 
 void Do_ARAM_DMA()

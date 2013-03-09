@@ -292,6 +292,14 @@ u16 DSPHLE::DSP_ReadControlRegister()
 }
 
 
+const short *DSPHLE::DSP_PeekAIBuffer (unsigned int address, unsigned int num_samples)
+{
+	return (const short *) HLEMemory_Get_Pointer (address);
+
+}
+
+
+
 // The reason that we don't disable this entire
 // function when Other Audio is disabled is that then we can't turn it back on
 // again once the game has started.

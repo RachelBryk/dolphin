@@ -34,6 +34,7 @@ void AudioCommonConfig::Load()
 	file.Get("Config", "EnableDTKMusic", &m_EnableDTKMusic, true);
 	file.Get("Config", "EnableJIT", &m_EnableJIT, true);
 	file.Get("Config", "DumpAudio", &m_DumpAudio, false);
+	file.Get("Config", "DumpAudioToAVI", &m_DumpAudioToAVI, false);
 #if defined __linux__ && HAVE_ALSA
 	file.Get("Config", "Backend", &sBackend, BACKEND_ALSA);
 #elif defined __APPLE__
@@ -56,6 +57,7 @@ void AudioCommonConfig::SaveSettings()
 	file.Set("Config", "EnableDTKMusic", m_EnableDTKMusic);
 	file.Set("Config", "EnableJIT", m_EnableJIT);
 	file.Set("Config", "DumpAudio", m_DumpAudio);
+	file.Set("Config", "DumpAudioToAVI", m_DumpAudioToAVI);
 	file.Set("Config", "Backend", sBackend);
 	file.Set("Config", "Frequency", iFrequency);
 	file.Set("Config", "Volume", m_Volume);

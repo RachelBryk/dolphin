@@ -80,6 +80,7 @@ private:
 		ID_ENABLE_DTK_MUSIC,
 		ID_ENABLE_THROTTLE,
 		ID_DUMP_AUDIO,
+		ID_DUMP_AUDIO_TO_AVI,
 		ID_FREQUENCY,
 		ID_BACKEND,
 		ID_VOLUME,
@@ -158,6 +159,7 @@ private:
 	wxStaticText* VolumeText;    
 	wxCheckBox*	EnableDTKMusic;
 	wxCheckBox*	DumpAudio;
+	wxCheckBox* DumpAudioToAVI;
 	wxArrayString wxArrayBackends;
 	wxChoice*	BackendSelection;
 	wxChoice*	FrequencySelection;

@@ -120,6 +120,7 @@ EVT_CHECKBOX(ID_ENABLE_DTK_MUSIC, CConfigMain::AudioSettingsChanged)
 EVT_CHECKBOX(ID_DSPTHREAD, CConfigMain::AudioSettingsChanged)
 EVT_CHECKBOX(ID_ENABLE_THROTTLE, CConfigMain::AudioSettingsChanged)
 EVT_CHECKBOX(ID_DUMP_AUDIO, CConfigMain::AudioSettingsChanged)
+EVT_CHECKBOX(ID_DUMP_AUDIO_TO_AVI, CConfigMain::AudioSettingsChanged)
 EVT_CHOICE(ID_FREQUENCY, CConfigMain::AudioSettingsChanged)
 EVT_CHOICE(ID_BACKEND, CConfigMain::AudioSettingsChanged)
 EVT_SLIDER(ID_VOLUME, CConfigMain::AudioSettingsChanged)
@@ -362,6 +363,7 @@ void CConfigMain::InitializeGUIValues()
 	EnableDTKMusic->SetValue(ac_Config.m_EnableDTKMusic ? true : false);
 	DSPThread->SetValue(startup_params.bDSPThread);
 	DumpAudio->SetValue(ac_Config.m_DumpAudio ? true : false);
+	DumpAudioToAVI->SetValue(ac_Config.m_DumpAudioToAVI ? true : false);
 	FrequencySelection->SetSelection(
 		FrequencySelection->FindString(wxString::Format(_("%d Hz"), ac_Config.iFrequency)));
 	// add backends to the list
@@ -607,6 +609,7 @@ void CConfigMain::CreateGUIControls()
 	DSPThread = new wxCheckBox(AudioPage, ID_DSPTHREAD, _("DSP LLE on Thread"));
 	DumpAudio = new wxCheckBox(AudioPage, ID_DUMP_AUDIO, _("Dump Audio"),
 				wxDefaultPosition, wxDefaultSize, 0, wxDefaultValidator);
+	DumpAudioToAVI = new wxCheckBox(AudioPage, ID_DUMP_AUDIO_TO_AVI, _("Dump Audio To AVI"));
 	VolumeSlider = new wxSlider(AudioPage, ID_VOLUME, 0, 1, 100,
 				wxDefaultPosition, wxDefaultSize, wxSL_VERTICAL|wxSL_INVERSE);
 	VolumeText = new wxStaticText(AudioPage, wxID_ANY, wxT(""),
@@ -623,6 +626,7 @@ void CConfigMain::CreateGUIControls()
 	sbAudioSettings->Add(EnableDTKMusic, 0, wxALL, 5);
 	sbAudioSettings->Add(DSPThread, 0, wxALL, 5);
 	sbAudioSettings->Add(DumpAudio, 0, wxALL, 5);
+	sbAudioSettings->Add(DumpAudioToAVI, 0, wxALL, 5);
 
 	wxStaticBoxSizer *sbVolume = new wxStaticBoxSizer(wxVERTICAL, AudioPage, _("Volume"));
 	sbVolume->Add(VolumeSlider, 1, wxLEFT|wxRIGHT, 13);
@@ -920,6 +924,7 @@ void CConfigMain::AudioSettingsChanged(wxCommandEvent& event)
 	default:
 		ac_Config.m_EnableDTKMusic = EnableDTKMusic->GetValue();
 		ac_Config.m_DumpAudio = DumpAudio->GetValue();
+		ac_Config.m_DumpAudioToAVI = DumpAudioToAVI->GetValue();
 
 		long int frequency;
 		FrequencySelection->GetStringSelection().ToLong(&frequency);
