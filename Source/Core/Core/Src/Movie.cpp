@@ -118,7 +118,9 @@ std::string GetInputDisplay()
 				g_numPads |= (1 << (i + 4));
 		}
 	}
-	std::string inputDisplay = "";
+	std::string inputDisplay = "frame: " + std::to_string((long long)Movie::g_currentFrame) + "\n";
+	//inputDisplay
+
 	for (int i = 0; i < 8; ++i)
 		if ((g_numPads & (1 << i)) != 0)
 			inputDisplay.append(g_InputDisplay[i]);
