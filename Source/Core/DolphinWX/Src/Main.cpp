@@ -269,6 +269,7 @@ bool DolphinApp::OnInit()
 				UseDebugger, BatchMode, UseLogger);
 	SetTopWindow(main_frame);
 	main_frame->SetMinSize(wxSize(400, 300));
+	main_frame->SetMaxSize(wxSize(99999999,9999999));
 
 	// Postpone final actions until event handler is running.
 	// Updating the game list makes use of wxProgressDialog which may

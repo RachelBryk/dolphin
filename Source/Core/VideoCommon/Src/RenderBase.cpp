@@ -154,12 +154,12 @@ void Renderer::CalculateTargetScale(int x, int y, int &scaledX, int &scaledY)
 			scaledY = (y / 2) * 5;
 			break;
 		case 6: // 3x
-			scaledX = x * 3;
-			scaledY = y * 3;
+			scaledX = x * 8;
+			scaledY = y * 8;
 			break;
 		case 7: // 4x
-			scaledX = x * 4;
-			scaledY = y * 4;
+			scaledX = x * 5;
+			scaledY = y * 5;
 			break;
 		default:
 			scaledX = x;
