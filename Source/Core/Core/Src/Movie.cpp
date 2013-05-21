@@ -37,6 +37,7 @@
 #include "../../Common/Src/NandPaths.h"
 #include "Crypto/md5.h"
 #include "scmrev.h"
+#include "HW/MemoryInterface.h"
 
 // The chunk to allocate movie data in multiples of.
 #define DTM_BASE_LENGTH (1024)
@@ -118,8 +119,35 @@ std::string GetInputDisplay()
 				g_numPads |= (1 << (i + 4));
 		}
 	}
-	std::string inputDisplay = "frame: " + std::to_string((long long)Movie::g_currentFrame) + "\n";
-	//inputDisplay
+	std::string inputDisplay = "frame: " + std::to_string((long long)Movie::g_currentFrame);
+	if (IsPlayingInput())
+	{
+		inputDisplay.append(" / ");
+		inputDisplay.append(std::to_string((long long)Movie::g_totalFrames));
+		inputDisplay.append("\n");
+	}
+	else
+		inputDisplay.append("\n");
+
+	u8 charpointer[4];
+//	MemoryInterface::Read32(charpointer,0x3dce54);
+	Memory::ReadBigEData(charpointer,0x3dce54,4);
+	u32 characterpointer = (charpointer[0]<<24)|(charpointer[1]<<16)|(charpointer[2]<<8)|(charpointer[3]);
+//	memcpy(&characterpointer,charpointer,4);
+	
+	if (characterpointer > 0x80000000)
+	{
+						    
+		characterpointer-=0x80000000;
+		u32 iSpeed = Memory::Read_U32(characterpointer+ 0x5c);
+		//float speed = (float) Memory::Read_U32(characterpointer+ 0x5c);
+		float speed;
+		memcpy(&speed,&iSpeed,4);
+		char strSpeed[100];
+		sprintf(strSpeed, "Speed: %f\n", speed);
+		std::string _speed = strSpeed;
+		inputDisplay.append(_speed);
+	}
 
 	for (int i = 0; i < 8; ++i)
 		if ((g_numPads & (1 << i)) != 0)
