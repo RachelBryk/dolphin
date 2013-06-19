@@ -58,6 +58,10 @@ void *DllDebugger(void *_hParent, bool Show)
 	return NULL;
 }
 
+void VideoSoftware::Video_Cleanup()
+{
+}
+
 void VideoSoftware::ShowConfig(void *_hParent)
 {
 #if defined(HAVE_WX) && HAVE_WX

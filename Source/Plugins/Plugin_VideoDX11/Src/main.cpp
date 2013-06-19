@@ -207,6 +207,7 @@ void VideoBackend::Shutdown()
 {
 	s_BackendInitialized = false;
 
+	// TODO: should be in Video_Cleanup
 	if (g_renderer)
 	{
 		s_efbAccessRequested = FALSE;
@@ -231,6 +232,9 @@ void VideoBackend::Shutdown()
 		delete g_renderer;
 		g_renderer = NULL;
 	}
+}
+
+void VideoBackend::Video_Cleanup() {
 }
 
 }

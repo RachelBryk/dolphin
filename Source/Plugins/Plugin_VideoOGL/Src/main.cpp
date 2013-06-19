@@ -212,6 +212,13 @@ void VideoBackend::Video_Prepare()
 void VideoBackend::Shutdown()
 {
 	s_BackendInitialized = false;
+	//GLInterface->Shutdown();
+	OpenGL_Shutdown;
+}
+ 
+void VideoBackend::Video_Cleanup()
+{
+	
 
 	if (g_renderer)
 	{
@@ -236,7 +243,7 @@ void VideoBackend::Shutdown()
 		delete g_renderer;
 		g_renderer = NULL;
 	}
-	OpenGL_Shutdown();
+	//OpenGL_Shutdown();
 }
 
 }
