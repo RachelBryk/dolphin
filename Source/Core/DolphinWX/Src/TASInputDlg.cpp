@@ -62,7 +62,8 @@ TASInputDlg::TASInputDlg(wxWindow *parent, wxWindowID id, const wxString &title,
 	wx_mainY_t = new wxTextCtrl(this, ID_MAIN_Y_TEXT, wxT("128"), wxDefaultPosition, wxSize(40, 20));
 	wx_mainY_t->SetMaxLength(3);
 	static_bitmap_main = new wxStaticBitmap(this, ID_MAIN_STICK, TASInputDlg::CreateStickBitmap(128,128), wxDefaultPosition, wxDefaultSize);
-	static_bitmap_main->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(TASInputDlg::OnMouseUpL), NULL, this);
+	static_bitmap_main->Bind(wxEVT_LEFT_DOWN, &TASInputDlg::OnMouseDownL, this);
+	static_bitmap_main->Bind(wxEVT_MOTION, &TASInputDlg::OnMouseDownL, this);
 	static_bitmap_main->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(TASInputDlg::OnMouseUpR), NULL, this);
 
 	main_xslider_box->Add(wx_mainX_s, 0, wxALIGN_TOP);
@@ -88,7 +89,8 @@ TASInputDlg::TASInputDlg(wxWindow *parent, wxWindowID id, const wxString &title,
 	wx_cY_t = new wxTextCtrl(this, ID_C_Y_TEXT, wxT("128"), wxDefaultPosition, wxSize(40, 20));
 	wx_cY_t->SetMaxLength(3);
 	static_bitmap_c = new wxStaticBitmap(this, ID_C_STICK, TASInputDlg::CreateStickBitmap(128,128), wxDefaultPosition, wxDefaultSize);
-	static_bitmap_c->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(TASInputDlg::OnMouseUpL), NULL, this);
+	static_bitmap_c->Bind(wxEVT_LEFT_DOWN, &TASInputDlg::OnMouseDownL, this);
+	static_bitmap_c->Bind(wxEVT_MOTION, &TASInputDlg::OnMouseDownL, this);
 	static_bitmap_c->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(TASInputDlg::OnMouseUpR), NULL, this);
 
 	c_xslider_box->Add(wx_cX_s, 0, wxALIGN_TOP);
@@ -760,8 +762,11 @@ void TASInputDlg::OnMouseUpR(wxMouseEvent& event)
 
 }
 
-void TASInputDlg::OnMouseUpL(wxMouseEvent& event)
+void TASInputDlg::OnMouseDownL(wxMouseEvent& event)
 {
+	if (event.GetEventType() == wxEVT_MOTION && !event.LeftIsDown())
+		return;
+
 	wxSlider *sliderX,*sliderY;
 	wxStaticBitmap *sbitmap;
 	wxTextCtrl *textX, *textY;
