@@ -752,13 +752,29 @@ void CFrame::OnPlayRecording(wxCommandEvent& WXUNUSED (event))
 
 	if(path.IsEmpty())
 		return;
-
+	if (Core::IsRunning())
+	{
+		if (Movie::IsPlayingInput())
+		{
+			Movie::SetReadOnly(false);
+			Movie::g_playMode = Movie::MODE_RECORDING;
+		}
+		Movie::LoadInput(path);
+	}
 	if (!Movie::IsReadOnly())
 	{
 		// let's make the read-only flag consistent at the start of a movie.
 		Movie::SetReadOnly(true);
 		GetMenuBar()->FindItem(IDM_RECORDREADONLY)->Check(true);
 	}
+
+	if (Core::IsRunning())
+	{
+		if (!Movie::IsPlayingInput())
+			Movie::g_playMode = Movie::MODE_PLAYING;
+		return;
+	}
+
 
 	if(Movie::PlayInput(path.mb_str()))
 		BootGame(std::string(""));
@@ -1582,7 +1598,7 @@ void CFrame::UpdateGUI()
 	GetMenuBar()->FindItem(IDM_STOP)->Enable(Running || Paused);
 	GetMenuBar()->FindItem(IDM_RESET)->Enable(Running || Paused);
 	GetMenuBar()->FindItem(IDM_RECORD)->Enable(!Movie::IsRecordingInput());
-	GetMenuBar()->FindItem(IDM_PLAYRECORD)->Enable(!Initialized);
+	GetMenuBar()->FindItem(IDM_PLAYRECORD)->Enable(true);
 	GetMenuBar()->FindItem(IDM_RECORDEXPORT)->Enable(Movie::IsPlayingInput() || Movie::IsRecordingInput());
 	GetMenuBar()->FindItem(IDM_FRAMESTEP)->Enable(Running || Paused);
 	GetMenuBar()->FindItem(IDM_SCREENSHOT)->Enable(Running || Paused);
