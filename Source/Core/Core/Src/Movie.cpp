@@ -137,14 +137,15 @@ std::string GetInputDisplay()
 	
 	if (characterpointer > 0x80000000)
 	{
-						    
-		characterpointer-=0x80000000;
-		u32 iSpeed = Memory::Read_U32(characterpointer+ 0x5c);
-		//float speed = (float) Memory::Read_U32(characterpointer+ 0x5c);
+
+		characterpointer -= 0x80000000;
+		u32 iSpeed = Memory::Read_U32(characterpointer + 0x5c);
 		float speed;
-		memcpy(&speed,&iSpeed,4);
+		memcpy(&speed, &iSpeed, 4);
+
+		u8 facing = Memory::Read_U8(characterpointer + 0x16);
 		char strSpeed[100];
-		sprintf(strSpeed, "Speed: %f\n", speed);
+		sprintf(strSpeed, "Speed: %f facing: %d\n", speed, facing);
 		std::string _speed = strSpeed;
 		inputDisplay.append(_speed);
 	}
@@ -1247,11 +1248,6 @@ void CheckMD5()
 	char game[255];
 	memcpy(game, SConfig::GetInstance().m_LocalCoreStartupParameter.m_strFilename.c_str(), SConfig::GetInstance().m_LocalCoreStartupParameter.m_strFilename.size());
 	md5_file(game, gameMD5);
-
-	if (memcmp(gameMD5,MD5,16) == 0)
-		Core::DisplayMessage("Checksum of current game matches the recorded game.", 2000);
-	else
-		PanicAlert("Checksum of current game does not match the recorded game!");
 }
 
 void GetMD5()
