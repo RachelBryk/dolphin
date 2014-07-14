@@ -365,6 +365,9 @@ u32 CEXIIPL::GetGCTime()
 			ltime = Common::Timer::GetLocalTimeSinceJan1970();
 	}
 
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.time)
+		return ((u32)SConfig::GetInstance().m_LocalCoreStartupParameter.time - cJanuary2000);
+
 	return ((u32)ltime - cJanuary2000);
 
 #if 0

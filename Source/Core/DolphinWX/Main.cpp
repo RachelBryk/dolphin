@@ -380,6 +380,18 @@ void DolphinApp::AfterInit(wxTimerEvent& WXUNUSED(event))
 
 	if (playMovie && movieFile != wxEmptyString)
 	{
+		File::IOFile movie;
+
+		Movie::DTMHeader header;
+
+		movie.Open(WxStrToStr(movieFile), "r+b");
+		movie.ReadArray(&header, 1);
+		header.recordingStartTime++;
+		movie.Seek(0, SEEK_SET);
+		movie.WriteArray(&header, 1);
+		movie.Close();
+
+
 		if (Movie::PlayInput(WxStrToStr(movieFile)))
 		{
 			if (LoadFile && FileToLoad != wxEmptyString)

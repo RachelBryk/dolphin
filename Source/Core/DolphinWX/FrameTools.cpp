@@ -825,6 +825,8 @@ void CFrame::OnPlay(wxCommandEvent& WXUNUSED (event))
 	}
 	else
 	{
+		SConfig::GetInstance().m_LocalCoreStartupParameter.time = 0;
+		wxGetTextFromUser("Enter time", "Enter time2").ToULongLong(&SConfig::GetInstance().m_LocalCoreStartupParameter.time);
 		// Core is uninitialized, start the game
 		BootGame("");
 	}
@@ -1133,7 +1135,7 @@ void CFrame::DoStop()
 
 void CFrame::OnStopped()
 {
-	wxEndBusyCursor();
+	//wxEndBusyCursor();
 
 	confirmStop = false;
 
