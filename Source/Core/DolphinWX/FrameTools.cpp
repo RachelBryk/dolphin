@@ -773,16 +773,33 @@ void CFrame::OnRecord(wxCommandEvent& WXUNUSED (event))
 
 void CFrame::OnPlayRecording(wxCommandEvent& WXUNUSED (event))
 {
-	wxString path = wxFileSelector(
-			_("Select The Recording File"),
-			wxEmptyString, wxEmptyString, wxEmptyString,
-			_("Dolphin TAS Movies (*.dtm)") +
-				wxString::Format("|*.dtm|%s", wxGetTranslation(wxALL_FILES)),
-			wxFD_OPEN | wxFD_PREVIEW | wxFD_FILE_MUST_EXIST,
-			this);
+	static std::string lastPath = "";
 
-	if (path.IsEmpty())
+	if (!lastPath.size())
+	{
+		wxString path = wxFileSelector(
+				_("Select The Recording File"),
+				wxEmptyString, wxEmptyString, wxEmptyString,
+				_("Dolphin TAS Movies (*.dtm)") +
+					wxString::Format("|*.dtm|%s", wxGetTranslation(wxALL_FILES)),
+				wxFD_OPEN | wxFD_PREVIEW | wxFD_FILE_MUST_EXIST,
+				this);
+
+		if (path.IsEmpty())
 		return;
+
+		lastPath = (WxStrToStr(path));
+	}
+
+	File::IOFile movie;
+	Movie::DTMHeader header;
+
+	movie.Open(lastPath, "r+b");
+	movie.ReadArray(&header, 1);
+	header.recordingStartTime++;
+	movie.Seek(0, SEEK_SET);
+	movie.WriteArray(&header, 1);
+	movie.Close();
 
 	if (!Movie::IsReadOnly())
 	{
@@ -791,7 +808,7 @@ void CFrame::OnPlayRecording(wxCommandEvent& WXUNUSED (event))
 		GetMenuBar()->FindItem(IDM_RECORDREADONLY)->Check(true);
 	}
 
-	if (Movie::PlayInput(WxStrToStr(path)))
+	if (Movie::PlayInput(lastPath))
 		BootGame("");
 }
 
@@ -1201,6 +1218,9 @@ void CFrame::OnStopped()
 	m_GameListCtrl->Show();
 	m_GameListCtrl->SetFocus();
 	UpdateGUI();
+
+	wxCommandEvent evt;
+	OnPlayRecording(evt);
 }
 
 void CFrame::DoRecordingSave()
