@@ -219,7 +219,7 @@ bool Renderer::CalculateTargetSize(unsigned int framebuffer_width, unsigned int 
 			efb_scale_denominatorX = efb_scale_denominatorY = 1;
 
 
-			int maxSize;
+			unsigned int maxSize;
 			if (g_renderer)
 				maxSize = g_renderer->GetMaxTextureSize();
 			else
