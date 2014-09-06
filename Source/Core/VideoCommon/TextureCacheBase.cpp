@@ -22,6 +22,7 @@
 enum
 {
 	TEXTURE_KILL_THRESHOLD = 200,
+	RENDER_TARGET_KILL_THRESHOLD = 3,
 };
 
 TextureCache *g_texture_cache;
@@ -30,6 +31,7 @@ GC_ALIGNED16(u8 *TextureCache::temp) = nullptr;
 unsigned int TextureCache::temp_size;
 
 TextureCache::TexCache TextureCache::textures;
+TextureCache::RenderTargetPool TextureCache::render_target_pool;
 
 TextureCache::BackupConfig TextureCache::backup_config;
 
@@ -67,6 +69,12 @@ void TextureCache::Invalidate()
 		delete tex.second;
 	}
 	textures.clear();
+
+	for (auto& rt : render_target_pool)
+	{
+		delete rt;
+	}
+	render_target_pool.clear();
 }
 
 TextureCache::~TextureCache()
@@ -136,6 +144,22 @@ void TextureCache::Cleanup()
 		else
 		{
 			++iter;
+		}
+	}
+
+	for (size_t i = 0; i < render_target_pool.size();)
+	{
+		auto rt = render_target_pool[i];
+
+		if (frameCount > RENDER_TARGET_KILL_THRESHOLD + rt->frameCount)
+		{
+			delete rt;
+			render_target_pool[i] = render_target_pool.back();
+			render_target_pool.pop_back();
+		}
+		else
+		{
+			++i;
 		}
 	}
 }
@@ -466,8 +490,8 @@ TextureCache::TCacheEntryBase* TextureCache::Load(unsigned int const stage,
 	{
 		if (!(texformat == GX_TF_RGBA8 && from_tmem))
 		{
-			pcfmt = TexDecoder_Decode(temp, src_data, expandedWidth,
-						expandedHeight, texformat, tlutaddr, tlutfmt, g_ActiveConfig.backend_info.bUseRGBATextures);
+			const u8* tlut = &texMem[tlutaddr];
+			pcfmt = TexDecoder_Decode(temp, src_data, expandedWidth, expandedHeight, texformat, tlut, (TlutFormat) tlutfmt);
 		}
 		else
 		{
@@ -543,7 +567,8 @@ TextureCache::TCacheEntryBase* TextureCache::Load(unsigned int const stage,
 				const u8*& mip_src_data = from_tmem
 					? ((level % 2) ? ptr_odd : ptr_even)
 					: src_data;
-				TexDecoder_Decode(temp, mip_src_data, expanded_mip_width, expanded_mip_height, texformat, tlutaddr, tlutfmt, g_ActiveConfig.backend_info.bUseRGBATextures);
+				const u8* tlut = &texMem[tlutaddr];
+				TexDecoder_Decode(temp, mip_src_data, expanded_mip_width, expanded_mip_height, texformat, tlut, (TlutFormat) tlutfmt);
 				mip_src_data += TexDecoder_GetTextureSizeInBytes(expanded_mip_width, expanded_mip_height, texformat);
 
 				entry->Load(mip_width, mip_height, expanded_mip_width, level);
@@ -753,7 +778,8 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, unsigned int dstFormat
 			ColorMask[4] = ColorMask[7] = 1.0f / 15.0f;
 
 			cbufid = 16;
-			if (!efbHasAlpha) {
+			if (!efbHasAlpha)
+			{
 				ColorMask[3] = 0.0f;
 				fConstAdd[3] = 1.0f;
 				cbufid = 17;
@@ -763,7 +789,8 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, unsigned int dstFormat
 			colmat[0] = colmat[4] = colmat[8] = colmat[15] = 1.0f;
 
 			cbufid = 18;
-			if (!efbHasAlpha) {
+			if (!efbHasAlpha)
+			{
 				ColorMask[3] = 0.0f;
 				fConstAdd[3] = 1.0f;
 				cbufid = 19;
@@ -774,7 +801,8 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, unsigned int dstFormat
 			colmat[3] = colmat[7] = colmat[11] = colmat[15] = 1.0f;
 
 			cbufid = 20;
-			if (!efbHasAlpha) {
+			if (!efbHasAlpha)
+			{
 				ColorMask[3] = 0.0f;
 				fConstAdd[0] = 1.0f;
 				fConstAdd[1] = 1.0f;
@@ -821,7 +849,8 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, unsigned int dstFormat
 			ColorMask[7] = 1.0f / 7.0f;
 
 			cbufid = 27;
-			if (!efbHasAlpha) {
+			if (!efbHasAlpha)
+			{
 				ColorMask[3] = 0.0f;
 				fConstAdd[3] = 1.0f;
 				cbufid = 28;
@@ -831,7 +860,8 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, unsigned int dstFormat
 			colmat[0] = colmat[5] = colmat[10] = colmat[15] = 1.0f;
 
 			cbufid = 29;
-			if (!efbHasAlpha) {
+			if (!efbHasAlpha)
+			{
 				ColorMask[3] = 0.0f;
 				fConstAdd[3] = 1.0f;
 				cbufid = 30;
@@ -863,8 +893,17 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, unsigned int dstFormat
 		}
 		else if (!(entry->type == TCET_EC_VRAM && entry->virtual_width == scaled_tex_w && entry->virtual_height == scaled_tex_h))
 		{
-			// remove it and recreate it as a render target
-			delete entry;
+			if (entry->type == TCET_EC_VRAM)
+			{
+				// try to re-use this render target later
+				FreeRenderTarget(entry);
+			}
+			else
+			{
+				// remove it and recreate it as a render target
+				delete entry;
+			}
+
 			entry = nullptr;
 		}
 	}
@@ -872,7 +911,7 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, unsigned int dstFormat
 	if (nullptr == entry)
 	{
 		// create the texture
-		textures[dstAddr] = entry = g_texture_cache->CreateRenderTargetTexture(scaled_tex_w, scaled_tex_h);
+		textures[dstAddr] = entry = AllocateRenderTarget(scaled_tex_w, scaled_tex_h);
 
 		// TODO: Using the wrong dstFormat, dumb...
 		entry->SetGeneralParameters(dstAddr, 0, dstFormat, 1);
@@ -884,4 +923,27 @@ void TextureCache::CopyRenderTargetToTexture(u32 dstAddr, unsigned int dstFormat
 	entry->frameCount = frameCount;
 
 	entry->FromRenderTarget(dstAddr, dstFormat, srcFormat, srcRect, isIntensity, scaleByHalf, cbufid, colmat);
+}
+
+TextureCache::TCacheEntryBase* TextureCache::AllocateRenderTarget(unsigned int width, unsigned int height)
+{
+	for (size_t i = 0; i < render_target_pool.size(); ++i)
+	{
+		auto rt = render_target_pool[i];
+
+		if (rt->virtual_width != width || rt->virtual_height != height)
+			continue;
+
+		render_target_pool[i] = render_target_pool.back();
+		render_target_pool.pop_back();
+
+		return rt;
+	}
+
+	return g_texture_cache->CreateRenderTargetTexture(width, height);
+}
+
+void TextureCache::FreeRenderTarget(TCacheEntryBase* entry)
+{
+	render_target_pool.push_back(entry);
 }

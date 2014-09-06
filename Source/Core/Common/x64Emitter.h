@@ -105,6 +105,10 @@ enum FloatOp {
 	floatLD = 0,
 	floatST = 2,
 	floatSTP = 3,
+	floatLD80 = 5,
+	floatSTP80 = 7,
+
+	floatINVALID = -1,
 };
 
 class XEmitter;
@@ -123,8 +127,8 @@ struct OpArg
 		offset = _offset;
 	}
 	void WriteRex(XEmitter *emit, int opBits, int bits, int customOp = -1) const;
-	void WriteVex(XEmitter* emit, int size, bool packed, X64Reg regOp1, X64Reg regOp2) const;
-	void WriteRest(XEmitter *emit, int extraBytes=0, X64Reg operandReg=(X64Reg)0xFF, bool warn_64bit_offset = true) const;
+	void WriteVex(XEmitter* emit, X64Reg regOp1, X64Reg regOp2, int L, int pp, int mmmmm, int W = 0) const;
+	void WriteRest(XEmitter *emit, int extraBytes=0, X64Reg operandReg=INVALID_REG, bool warn_64bit_offset = true) const;
 	void WriteFloatModRM(XEmitter *emit, FloatOp op);
 	void WriteSingleByteOp(XEmitter *emit, u8 op, X64Reg operandReg, int bits);
 	// This one is public - must be written to
@@ -134,7 +138,8 @@ struct OpArg
 	void WriteNormalOp(XEmitter *emit, bool toRM, NormalOp op, const OpArg &operand, int bits) const;
 	bool IsImm() const {return scale == SCALE_IMM8 || scale == SCALE_IMM16 || scale == SCALE_IMM32 || scale == SCALE_IMM64;}
 	bool IsSimpleReg() const {return scale == SCALE_NONE;}
-	bool IsSimpleReg(X64Reg reg) const {
+	bool IsSimpleReg(X64Reg reg) const
+	{
 		if (!IsSimpleReg())
 			return false;
 		return GetSimpleReg() == reg;
@@ -175,21 +180,30 @@ private:
 inline OpArg M(const void *ptr) {return OpArg((u64)ptr, (int)SCALE_RIP);}
 inline OpArg R(X64Reg value)    {return OpArg(0, SCALE_NONE, value);}
 inline OpArg MatR(X64Reg value) {return OpArg(0, SCALE_ATREG, value);}
-inline OpArg MDisp(X64Reg value, int offset) {
+
+inline OpArg MDisp(X64Reg value, int offset)
+{
 	return OpArg((u32)offset, SCALE_ATREG, value);
 }
-inline OpArg MComplex(X64Reg base, X64Reg scaled, int scale, int offset) {
+
+inline OpArg MComplex(X64Reg base, X64Reg scaled, int scale, int offset)
+{
 	return OpArg(offset, scale, base, scaled);
 }
-inline OpArg MScaled(X64Reg scaled, int scale, int offset) {
+
+inline OpArg MScaled(X64Reg scaled, int scale, int offset)
+{
 	if (scale == SCALE_1)
 		return OpArg(offset, SCALE_ATREG, scaled);
 	else
 		return OpArg(offset, scale | 0x20, RAX, scaled);
 }
-inline OpArg MRegSum(X64Reg base, X64Reg offset) {
+
+inline OpArg MRegSum(X64Reg base, X64Reg offset)
+{
 	return MComplex(base, offset, 1, 0);
 }
+
 inline OpArg Imm8 (u8 imm)  {return OpArg(imm, SCALE_IMM8);}
 inline OpArg Imm16(u16 imm) {return OpArg(imm, SCALE_IMM16);} //rarely used
 inline OpArg Imm32(u32 imm) {return OpArg(imm, SCALE_IMM32);}
@@ -199,14 +213,18 @@ inline OpArg ImmPtr(const void* imm) {return Imm64((u64)imm);}
 #else
 inline OpArg ImmPtr(const void* imm) {return Imm32((u32)imm);}
 #endif
-inline u32 PtrOffset(void* ptr, void* base) {
+
+inline u32 PtrOffset(void* ptr, void* base)
+{
 #ifdef _ARCH_64
 	s64 distance = (s64)ptr-(s64)base;
 	if (distance >= 0x80000000LL ||
-	    distance < -0x80000000LL) {
+	    distance < -0x80000000LL)
+	{
 		_assert_msg_(DYNA_REC, 0, "pointer offset out of range");
 		return 0;
 	}
+
 	return (u32)distance;
 #else
 	return (u32)ptr-(u32)base;
@@ -257,7 +275,10 @@ private:
 	void WriteSSE41Op(int size, u16 sseOp, bool packed, X64Reg regOp, OpArg arg, int extrabytes = 0);
 	void WriteAVXOp(int size, u16 sseOp, bool packed, X64Reg regOp, OpArg arg, int extrabytes = 0);
 	void WriteAVXOp(int size, u16 sseOp, bool packed, X64Reg regOp1, X64Reg regOp2, OpArg arg, int extrabytes = 0);
-	void WriteFloatLoadStore(int bits, FloatOp op, OpArg arg);
+	void WriteVEXOp(int size, u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, OpArg arg, int extrabytes = 0);
+	void WriteBMI1Op(int size, u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, OpArg arg, int extrabytes = 0);
+	void WriteBMI2Op(int size, u8 opPrefix, u16 op, X64Reg regOp1, X64Reg regOp2, OpArg arg, int extrabytes = 0);
+	void WriteFloatLoadStore(int bits, FloatOp op, FloatOp op_80b, OpArg arg);
 	void WriteNormalOp(XEmitter *emit, int bits, NormalOp op, const OpArg &a1, const OpArg &a2);
 
 protected:
@@ -322,7 +343,6 @@ public:
 	FixupBranch J(bool force5bytes = false);
 
 	void JMP(const u8 * addr, bool force5Bytes = false);
-	void JMP(OpArg arg);
 	void JMPptr(const OpArg &arg);
 	void JMPself(); //infinite loop!
 #ifdef CALL
@@ -522,11 +542,8 @@ public:
 	// SSE/SSE2: Useful alternative to shuffle in some cases.
 	void MOVDDUP(X64Reg regOp, OpArg arg);
 
-	// THESE TWO ARE NEW AND UNTESTED
 	void UNPCKLPS(X64Reg dest, OpArg src);
 	void UNPCKHPS(X64Reg dest, OpArg src);
-
-	// These are OK.
 	void UNPCKLPD(X64Reg dest, OpArg src);
 	void UNPCKHPD(X64Reg dest, OpArg src);
 
@@ -574,20 +591,22 @@ public:
 	void CVTPS2PD(X64Reg dest, OpArg src);
 	void CVTPD2PS(X64Reg dest, OpArg src);
 	void CVTSS2SD(X64Reg dest, OpArg src);
-	void CVTSS2SI(X64Reg dest, OpArg src);
 	void CVTSI2SS(X64Reg dest, OpArg src);
 	void CVTSD2SS(X64Reg dest, OpArg src);
-	void CVTSD2SI(X64Reg dest, OpArg src);
 	void CVTSI2SD(X64Reg dest, OpArg src);
 	void CVTDQ2PD(X64Reg regOp, OpArg arg);
 	void CVTPD2DQ(X64Reg regOp, OpArg arg);
 	void CVTDQ2PS(X64Reg regOp, OpArg arg);
 	void CVTPS2DQ(X64Reg regOp, OpArg arg);
 
-	void CVTTSS2SI(X64Reg regOp, OpArg arg);
-	void CVTTSD2SI(X64Reg regOp, OpArg arg);
 	void CVTTPS2DQ(X64Reg regOp, OpArg arg);
 	void CVTTPD2DQ(X64Reg regOp, OpArg arg);
+
+	// Destinations are X64 regs (rax, rbx, ...) for these instructions.
+	void CVTSS2SI(X64Reg xregdest, OpArg src);
+	void CVTSD2SI(X64Reg xregdest, OpArg src);
+	void CVTTSS2SI(X64Reg xregdest, OpArg arg);
+	void CVTTSD2SI(X64Reg xregdest, OpArg arg);
 
 	// SSE2: Packed integer instructions
 	void PACKSSDW(X64Reg dest, OpArg arg);
@@ -692,7 +711,22 @@ public:
 	void VPAND(X64Reg regOp1, X64Reg regOp2, OpArg arg);
 	void VPANDN(X64Reg regOp1, X64Reg regOp2, OpArg arg);
 
-	void RTDSC();
+	// VEX GPR instructions
+	void SARX(int bits, X64Reg regOp1, OpArg arg, X64Reg regOp2);
+	void SHLX(int bits, X64Reg regOp1, OpArg arg, X64Reg regOp2);
+	void SHRX(int bits, X64Reg regOp1, OpArg arg, X64Reg regOp2);
+	void RORX(int bits, X64Reg regOp, OpArg arg, u8 rotate);
+	void PEXT(int bits, X64Reg regOp1, X64Reg regOp2, OpArg arg);
+	void PDEP(int bits, X64Reg regOp1, X64Reg regOp2, OpArg arg);
+	void MULX(int bits, X64Reg regOp1, X64Reg regOp2, OpArg arg);
+	void BZHI(int bits, X64Reg regOp1, OpArg arg, X64Reg regOp2);
+	void BLSR(int bits, X64Reg regOp, OpArg arg);
+	void BLSMSK(int bits, X64Reg regOp, OpArg arg);
+	void BLSI(int bits, X64Reg regOp, OpArg arg);
+	void BEXTR(int bits, X64Reg regOp1, OpArg arg, X64Reg regOp2);
+	void ANDN(int bits, X64Reg regOp1, X64Reg regOp2, OpArg arg);
+
+	void RDTSC();
 
 	// Utility functions
 	// The difference between this and CALL is that this aligns the stack

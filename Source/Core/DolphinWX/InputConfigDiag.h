@@ -5,7 +5,7 @@
 #pragma once
 
 #define SLIDER_TICK_COUNT    100
-#define DETECT_WAIT_TIME     1500
+#define DETECT_WAIT_TIME     2500
 #define PREVIEW_UPDATE_TIME  25
 
 // might have to change this setup for wiimote
@@ -28,7 +28,7 @@
 #include "InputCommon/ControllerInterface/ControllerInterface.h"
 #include "InputCommon/ControllerInterface/Device.h"
 
-class InputPlugin;
+class InputConfig;
 class wxComboBox;
 class wxCommandEvent;
 class wxEvent;
@@ -95,7 +95,7 @@ class GamepadPage;
 class ControlDialog : public wxDialog
 {
 public:
-	ControlDialog(GamepadPage* const parent, InputPlugin& plugin, ControllerInterface::ControlReference* const ref);
+	ControlDialog(GamepadPage* const parent, InputConfig& config, ControllerInterface::ControlReference* const ref);
 
 	wxStaticBoxSizer* CreateControlChooser(GamepadPage* const parent);
 
@@ -113,7 +113,7 @@ public:
 	void AppendControl(wxCommandEvent& event);
 
 	ControllerInterface::ControlReference* const control_reference;
-	InputPlugin& m_plugin;
+	InputConfig& m_config;
 	wxComboBox*  device_cbox;
 
 	wxTextCtrl* textctrl;
@@ -124,7 +124,7 @@ private:
 	GamepadPage* const m_parent;
 	wxStaticText*      m_bound_label;
 	wxStaticText*      m_error_label;
-	DeviceQualifier    m_devq;
+	ciface::Core::DeviceQualifier    m_devq;
 	bool GetExpressionForSelectedControl(wxString &expr);
 };
 
@@ -173,7 +173,7 @@ class GamepadPage : public wxPanel
 	friend class ControlDialog;
 
 public:
-	GamepadPage(wxWindow* parent, InputPlugin& plugin, const unsigned int pad_num, InputConfigDialog* const config_dialog);
+	GamepadPage(wxWindow* parent, InputConfig& config, const unsigned int pad_num, InputConfigDialog* const config_dialog);
 
 	void UpdateGUI();
 
@@ -196,6 +196,7 @@ public:
 
 	void AdjustControlOption(wxCommandEvent& event);
 	void AdjustSetting(wxCommandEvent& event);
+	void AdjustSettingUI(wxCommandEvent& event);
 
 	void GetProfilePath(std::string& path);
 
@@ -203,6 +204,7 @@ public:
 	wxComboBox* device_cbox;
 
 	std::vector<ControlGroupBox*> control_groups;
+	std::vector<ControlButton*>   control_buttons;
 
 protected:
 
@@ -212,13 +214,15 @@ private:
 
 	ControlDialog*           m_control_dialog;
 	InputConfigDialog* const m_config_dialog;
-	InputPlugin &m_plugin;
+	InputConfig& m_config;
+	bool DetectButton(ControlButton* button);
+	bool m_iterate = false;
 };
 
 class InputConfigDialog : public wxDialog
 {
 public:
-	InputConfigDialog(wxWindow* const parent, InputPlugin& plugin, const std::string& name, const int tab_num = 0);
+	InputConfigDialog(wxWindow* const parent, InputConfig& config, const std::string& name, const int tab_num = 0);
 	//~InputConfigDialog();
 
 	bool Destroy() override;
@@ -235,6 +239,6 @@ private:
 
 	wxNotebook*               m_pad_notebook;
 	std::vector<GamepadPage*> m_padpages;
-	InputPlugin&              m_plugin;
+	InputConfig&              m_config;
 	wxTimer*                  m_update_timer;
 };

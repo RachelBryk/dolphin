@@ -111,7 +111,8 @@ private:
 		u32 unknown2;
 
 		// All the data is byteswapped
-		SDiskHeaderInfo() {
+		SDiskHeaderInfo()
+		{
 			debug_mntr_size = 0;
 			simulated_mem_size = 0;
 			arg_offset = 0;
@@ -129,6 +130,9 @@ private:
 	std::vector<u8> m_apploader;
 	std::vector<u8> m_DOL;
 
+	u64 m_fst_address;
+	u64 m_dol_address;
+
 	static const u8 ENTRY_SIZE = 0x0c;
 	static const u8 FILE_ENTRY = 0;
 	static const u8 DIRECTORY_ENTRY = 1;
@@ -136,8 +140,6 @@ private:
 	static const u64 DISKHEADERINFO_ADDRESS = 0x440;
 	static const u64 APPLOADER_ADDRESS = 0x2440;
 	static const u32 MAX_NAME_LENGTH = 0x3df;
-	u64 FST_ADDRESS;
-	u64 DOL_ADDRESS;
 };
 
 } // namespace

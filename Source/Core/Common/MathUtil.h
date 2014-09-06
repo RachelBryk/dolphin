@@ -123,6 +123,15 @@ u32 ClassifyDouble(double dvalue);
 // More efficient float version.
 u32 ClassifyFloat(float fvalue);
 
+extern const int frsqrte_expected_base[];
+extern const int frsqrte_expected_dec[];
+extern const int fres_expected_base[];
+extern const int fres_expected_dec[];
+
+// PowerPC approximation algorithms
+double ApproximateReciprocalSquareRoot(double val);
+double ApproximateReciprocal(double val);
+
 template<class T>
 struct Rectangle
 {
@@ -180,7 +189,7 @@ inline int Log2(u64 val)
 #if defined(__GNUC__)
 	return 63 - __builtin_clzll(val);
 
-#elif defined(_MSC_VER) && _ARCH_64
+#elif defined(_MSC_VER)
 	unsigned long result = -1;
 	_BitScanReverse64(&result, val);
 	return result;

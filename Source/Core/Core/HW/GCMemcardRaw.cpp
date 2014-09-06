@@ -52,13 +52,6 @@ MemoryCard::~MemoryCard()
 {
 	if (m_flush_thread.joinable())
 	{
-		// Update the flush buffer one last time, flush, and join.
-		{
-			std::unique_lock<std::mutex> l(m_flush_mutex);
-			memcpy(&m_flush_buffer[0], &m_memcard_data[0], memory_card_size);
-		}
-
-		m_is_exiting.Set();
 		m_flush_trigger.Set();
 
 		m_flush_thread.join();
@@ -76,27 +69,19 @@ void MemoryCard::FlushThread()
 		StringFromFormat("Memcard%x-Flush", card_index).c_str());
 
 	const auto flush_interval = std::chrono::seconds(15);
-	auto last_flush = std::chrono::steady_clock::now();
-	bool dirty = false;
 
-	for (;;)
+	while (true)
 	{
-		bool triggered = m_flush_trigger.WaitFor(flush_interval);
-		bool do_exit = m_is_exiting.IsSet();
-		if (triggered)
-		{
-			dirty = true;
-		}
-		// Delay the flush if we're not exiting or if the event timed out and
-		// the state isn't dirty.
+		// If triggered, we're exiting.
+		// If timed out, check if we need to flush.
+		bool do_exit = m_flush_trigger.WaitFor(flush_interval);
 		if (!do_exit)
 		{
-			auto now = std::chrono::steady_clock::now();
-			if (now - last_flush < flush_interval || !dirty)
+			bool is_dirty = m_dirty.TestAndClear();
+			if (!is_dirty)
 			{
 				continue;
 			}
-			last_flush = now;
 		}
 
 		// Opening the file is purposefully done each iteration to ensure the
@@ -131,10 +116,9 @@ void MemoryCard::FlushThread()
 
 		{
 			std::unique_lock<std::mutex> l(m_flush_mutex);
-			pFile.WriteBytes(&m_flush_buffer[0], memory_card_size);
+			memcpy(&m_flush_buffer[0], &m_memcard_data[0], memory_card_size);
 		}
-
-		dirty = false;
+		pFile.WriteBytes(&m_flush_buffer[0], memory_card_size);
 
 		if (!do_exit)
 		{
@@ -150,18 +134,9 @@ void MemoryCard::FlushThread()
 	}
 }
 
-// Attempt to update the flush buffer and trigger a flush. If we can't get a
-// lock in order to update the flush buffer, a write is in progress and a future
-// write will take care of any changes to the memcard data, so nothing needs to
-// be done now.
-void MemoryCard::TryFlush()
+void MemoryCard::MakeDirty()
 {
-	if (m_flush_mutex.try_lock())
-	{
-		memcpy(&m_flush_buffer[0], &m_memcard_data[0], memory_card_size);
-		m_flush_mutex.unlock();
-		m_flush_trigger.Set();
-	}
+	m_dirty.Set();
 }
 
 s32 MemoryCard::Read(u32 srcaddress, s32 length, u8 *destaddress)
@@ -186,8 +161,11 @@ s32 MemoryCard::Write(u32 destaddress, s32 length, u8 *srcaddress)
 		return -1;
 	}
 
-	memcpy(&m_memcard_data[destaddress], srcaddress, length);
-	TryFlush();
+	{
+		std::unique_lock<std::mutex> l(m_flush_mutex);
+		memcpy(&m_memcard_data[destaddress], srcaddress, length);
+	}
+	MakeDirty();
 	return length;
 }
 
@@ -196,19 +174,24 @@ void MemoryCard::ClearBlock(u32 address)
 	if (address & (BLOCK_SIZE - 1) || !IsAddressInBounds(address))
 	{
 		PanicAlertT("MemoryCard: ClearBlock called on invalid address %x",
-					address);
+			address);
+		return;
 	}
 	else
 	{
+		std::unique_lock<std::mutex> l(m_flush_mutex);
 		memset(&m_memcard_data[address], 0xFF, BLOCK_SIZE);
-		TryFlush();
 	}
+	MakeDirty();
 }
 
 void MemoryCard::ClearAll()
 {
-	memset(&m_memcard_data[0], 0xFF, memory_card_size);
-	TryFlush();
+	{
+		std::unique_lock<std::mutex> l(m_flush_mutex);
+		memset(&m_memcard_data[0], 0xFF, memory_card_size);
+	}
+	MakeDirty();
 }
 
 void MemoryCard::DoState(PointerWrap &p)

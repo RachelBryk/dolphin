@@ -220,22 +220,6 @@ void Interpreter::lwz(UGeckoInstruction _inst)
 	{
 		m_GPR[_inst.RD] = temp;
 	}
-
-	// hack to detect SelectThread loop
-	// should probably run a pass through memory instead before execution
-	// but that would be dangerous
-
-	// Enable idle skipping?
-	/*
-	if ((_inst.hex & 0xFFFF0000)==0x800D0000 &&
-		Memory::ReadUnchecked_U32(PC+4)==0x28000000 &&
-		Memory::ReadUnchecked_U32(PC+8)==0x4182fff8)
-	{
-		if (CommandProcessor::AllowIdleSkipping() && PixelEngine::AllowIdleSkipping())
-		{
-			CoreTiming::Idle();
-		}
-	}*/
 }
 
 void Interpreter::lwzu(UGeckoInstruction _inst)
@@ -376,7 +360,7 @@ void Interpreter::dcbz(UGeckoInstruction _inst)
 {
 	// HACK but works... we think
 	if (!Core::g_CoreStartupParameter.bDCBZOFF)
-		Memory::Memset(Helper_Get_EA_X(_inst) & (~31), 0, 32);
+		Memory::ClearCacheLine(Helper_Get_EA_X(_inst) & (~31));
 	if (!JitInterface::GetCore())
 		PowerPC::CheckExceptions();
 }

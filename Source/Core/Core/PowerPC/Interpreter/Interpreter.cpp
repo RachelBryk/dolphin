@@ -179,13 +179,6 @@ int Interpreter::SingleStepInner()
 	last_pc = PC;
 	PC = NPC;
 
-#if defined(_DEBUG) || defined(DEBUGFAST)
-	if (PowerPC::ppcState.gpr[1] == 0)
-	{
-		WARN_LOG(POWERPC, "%i Corrupt stack", PowerPC::ppcState.DebugCount);
-	}
-	PowerPC::ppcState.DebugCount++;
-#endif
 	patches();
 
 	GekkoOPInfo *opinfo = GetOpInfo(instCode);
@@ -312,7 +305,7 @@ void Interpreter::unknown_instruction(UGeckoInstruction _inst)
 		std::string disasm = GekkoDisassembler::Disassemble(Memory::ReadUnchecked_U32(last_pc), last_pc);
 		NOTICE_LOG(POWERPC, "Last PC = %08x : %s", last_pc, disasm.c_str());
 		Dolphin_Debugger::PrintCallstack();
-		_dbg_assert_msg_(POWERPC, 0, "\nIntCPU: Unknown instruction %08x at PC = %08x  last_PC = %08x  LR = %08x\n", _inst.hex, PC, last_pc, LR);
+		_assert_msg_(POWERPC, 0, "\nIntCPU: Unknown instruction %08x at PC = %08x  last_PC = %08x  LR = %08x\n", _inst.hex, PC, last_pc, LR);
 	}
 
 }

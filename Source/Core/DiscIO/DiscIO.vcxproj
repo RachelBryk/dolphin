@@ -44,7 +44,6 @@
     <ClCompile Include="DiscScrubber.cpp" />
     <ClCompile Include="DriveBlob.cpp" />
     <ClCompile Include="FileBlob.cpp" />
-    <ClCompile Include="FileHandlerARC.cpp" />
     <ClCompile Include="FileMonitor.cpp" />
     <ClCompile Include="Filesystem.cpp" />
     <ClCompile Include="FileSystemGCWii.cpp" />
@@ -68,7 +67,6 @@
     <ClInclude Include="DiscScrubber.h" />
     <ClInclude Include="DriveBlob.h" />
     <ClInclude Include="FileBlob.h" />
-    <ClInclude Include="FileHandlerARC.h" />
     <ClInclude Include="FileMonitor.h" />
     <ClInclude Include="Filesystem.h" />
     <ClInclude Include="FileSystemGCWii.h" />
@@ -86,13 +84,13 @@
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Externals\polarssl\visualc\PolarSSL.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)polarssl\visualc\PolarSSL.vcxproj">
       <Project>{bdb6578b-0691-4e80-a46c-df21639fd3b8}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\..\Externals\zlib\zlib.vcxproj">
+    <ProjectReference Include="$(ExternalsDir)zlib\zlib.vcxproj">
       <Project>{ff213b23-2c26-4214-9f88-85271e557e87}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Common\Common.vcxproj">
+    <ProjectReference Include="$(CoreDir)Common\Common.vcxproj">
       <Project>{2e6c348c-c75c-4d94-8d1e-9c1fcbf3efe4}</Project>
     </ProjectReference>
   </ItemGroup>

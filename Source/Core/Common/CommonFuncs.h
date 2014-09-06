@@ -74,25 +74,29 @@ _mm_shuffle_epi8(__m128i a, __m128i mask)
 // GCC 4.8 defines all the rotate functions now
 // Small issue with GCC's lrotl/lrotr intrinsics is they are still 32bit while we require 64bit
 #ifndef _rotl
-inline u32 _rotl(u32 x, int shift) {
+inline u32 _rotl(u32 x, int shift)
+{
 	shift &= 31;
 	if (!shift) return x;
 	return (x << shift) | (x >> (32 - shift));
 }
 
-inline u32 _rotr(u32 x, int shift) {
+inline u32 _rotr(u32 x, int shift)
+{
 	shift &= 31;
 	if (!shift) return x;
 	return (x >> shift) | (x << (32 - shift));
 }
 #endif
 
-inline u64 _rotl64(u64 x, unsigned int shift){
+inline u64 _rotl64(u64 x, unsigned int shift)
+{
 	unsigned int n = shift % 64;
 	return (x << n) | (x >> (64 - n));
 }
 
-inline u64 _rotr64(u64 x, unsigned int shift){
+inline u64 _rotr64(u64 x, unsigned int shift)
+{
 	unsigned int n = shift % 64;
 	return (x >> n) | (x << (64 - n));
 }
@@ -157,6 +161,12 @@ extern "C"
 	__declspec(dllimport) void __stdcall DebugBreak(void);
 }
 	#define Crash() {DebugBreak();}
+
+	#if (_MSC_VER > 1800)
+	#error alignof compat can be removed
+	#else
+	#define alignof(x) __alignof(x)
+	#endif
 #endif // WIN32 ndef
 
 // Generic function to get last error message.

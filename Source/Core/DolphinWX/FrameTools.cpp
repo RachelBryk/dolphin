@@ -105,7 +105,7 @@ extern "C" {
 #include "DolphinWX/resources/Dolphin.c" // NOLINT: Dolphin icon
 };
 
-class InputPlugin;
+class InputConfig;
 class wxFrame;
 
 // Create menu items
@@ -126,7 +126,8 @@ void CFrame::CreateMenu()
 
 	drives = cdio_get_devices();
 	// Windows Limitation of 24 character drives
-	for (unsigned int i = 0; i < drives.size() && i < 24; i++) {
+	for (unsigned int i = 0; i < drives.size() && i < 24; i++)
+	{
 		externalDrive->Append(IDM_DRIVE1 + i, StrToWxStr(drives[i]));
 	}
 
@@ -1221,7 +1222,7 @@ void CFrame::OnConfigDSP(wxCommandEvent& WXUNUSED (event))
 
 void CFrame::OnConfigPAD(wxCommandEvent& WXUNUSED (event))
 {
-	InputPlugin *const pad_plugin = Pad::GetPlugin();
+	InputConfig* const pad_plugin = Pad::GetConfig();
 	bool was_init = false;
 	if (g_controller_interface.IsInit()) // check if game is running
 	{
@@ -1249,7 +1250,7 @@ void CFrame::OnConfigPAD(wxCommandEvent& WXUNUSED (event))
 
 void CFrame::OnConfigWiimote(wxCommandEvent& WXUNUSED (event))
 {
-	InputPlugin *const wiimote_plugin = Wiimote::GetPlugin();
+	InputConfig* const wiimote_plugin = Wiimote::GetConfig();
 	bool was_init = false;
 	if (g_controller_interface.IsInit()) // check if game is running
 	{

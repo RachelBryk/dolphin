@@ -94,7 +94,6 @@ void Jit64::lXXx(UGeckoInstruction inst)
 	// (mb2): I agree,
 	// IMHO those Idles should always be skipped and replaced by a more controllable "native" Idle methode
 	// ... maybe the throttle one already do that :p
-	// if (CommandProcessor::AllowIdleSkipping() && PixelEngine::AllowIdleSkipping())
 	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bSkipIdle &&
 	    inst.OPCD == 32 &&
 	    (inst.hex & 0xFFFF0000) == 0x800D0000 &&
@@ -260,17 +259,37 @@ void Jit64::dcbz(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITLoadStoreOff);
+	if (Core::g_CoreStartupParameter.bDCBZOFF)
+		return;
 
-	// FIXME
-	FALLBACK_IF(true);
+	int a = inst.RA;
+	int b = inst.RB;
 
-	MOV(32, R(EAX), gpr.R(inst.RB));
-	if (inst.RA)
-		ADD(32, R(EAX), gpr.R(inst.RA));
+	u32 mem_mask = Memory::ADDR_MASK_HW_ACCESS;
+	if (Core::g_CoreStartupParameter.bMMU || Core::g_CoreStartupParameter.bTLBHack)
+		mem_mask |= Memory::ADDR_MASK_MEM1;
+
+	MOV(32, R(EAX), gpr.R(b));
+	if (a)
+		ADD(32, R(EAX), gpr.R(a));
 	AND(32, R(EAX), Imm32(~31));
+	TEST(32, R(EAX), Imm32(mem_mask));
+	FixupBranch fast = J_CC(CC_Z, true);
+
+	// Should this code ever run? I can't find any games that use DCBZ on non-physical addresses, but
+	// supposedly there are, at least for some MMU titles. Let's be careful and support it to be sure.
+	MOV(32, M(&PC), Imm32(jit->js.compilerPC));
+	u32 registersInUse = CallerSavedRegistersInUse();
+	ABI_PushRegistersAndAdjustStack(registersInUse, false);
+	ABI_CallFunctionR((void *)&Memory::ClearCacheLine, EAX);
+	ABI_PopRegistersAndAdjustStack(registersInUse, false);
+
+	FixupBranch exit = J();
+	SetJumpTarget(fast);
 	PXOR(XMM0, R(XMM0));
-	MOVAPS(MComplex(EBX, EAX, SCALE_1, 0), XMM0);
-	MOVAPS(MComplex(EBX, EAX, SCALE_1, 16), XMM0);
+	MOVAPS(MComplex(RBX, RAX, SCALE_1, 0), XMM0);
+	MOVAPS(MComplex(RBX, RAX, SCALE_1, 16), XMM0);
+	SetJumpTarget(exit);
 }
 
 void Jit64::stX(UGeckoInstruction inst)
@@ -457,17 +476,17 @@ void Jit64::lmw(UGeckoInstruction inst)
 	JITDISABLE(bJITLoadStoreOff);
 
 	// TODO: This doesn't handle rollback on DSI correctly
+	gpr.FlushLockX(ECX);
+	MOV(32, R(ECX), Imm32((u32)(s32)inst.SIMM_16));
 	if (inst.RA)
-	{
-		gpr.Lock(inst.RA);
-		gpr.BindToRegister(inst.RA, true, false);
-	}
+		ADD(32, R(ECX), gpr.R(inst.RA));
 	for (int i = inst.RD; i < 32; i++)
 	{
+		SafeLoadToReg(EAX, R(ECX), 32, (i - inst.RD) * 4, CallerSavedRegistersInUse(), false);
 		gpr.BindToRegister(i, false, true);
-		SafeLoadToReg(gpr.RX(i), inst.RA ? gpr.R(inst.RA) : Imm32(0), 32, (i - inst.RD) * 4 + (s32)inst.SIMM_16, CallerSavedRegistersInUse(), false);
+		MOV(32, gpr.R(i), R(EAX));
 	}
-	gpr.UnlockAll();
+	gpr.UnlockAllX();
 }
 
 void Jit64::stmw(UGeckoInstruction inst)
