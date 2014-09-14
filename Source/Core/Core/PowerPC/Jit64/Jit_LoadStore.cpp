@@ -5,7 +5,7 @@
 // TODO(ector): Tons of pshufb optimization of the loads/stores, for SSSE3+, possibly SSE4, only.
 // Should give a very noticable speed boost to paired single heavy code.
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 
 #include "Core/PowerPC/Jit64/Jit.h"
 #include "Core/PowerPC/Jit64/JitAsm.h"
@@ -21,9 +21,9 @@ void Jit64::lXXx(UGeckoInstruction inst)
 	int a = inst.RA, b = inst.RB, d = inst.RD;
 
 	// Skip disabled JIT instructions
-	FALLBACK_IF(Core::g_CoreStartupParameter.bJITLoadStorelbzxOff && (inst.OPCD == 31) && (inst.SUBOP10 == 87));
-	FALLBACK_IF(Core::g_CoreStartupParameter.bJITLoadStorelXzOff && ((inst.OPCD == 34) || (inst.OPCD == 40) || (inst.OPCD == 32)));
-	FALLBACK_IF(Core::g_CoreStartupParameter.bJITLoadStorelwzOff && (inst.OPCD == 32));
+	FALLBACK_IF(SConfig::GetInstance().m_LocalCoreStartupParameter.bJITLoadStorelbzxOff && (inst.OPCD == 31) && (inst.SUBOP10 == 87));
+	FALLBACK_IF(SConfig::GetInstance().m_LocalCoreStartupParameter.bJITLoadStorelXzOff && ((inst.OPCD == 34) || (inst.OPCD == 40) || (inst.OPCD == 32)));
+	FALLBACK_IF(SConfig::GetInstance().m_LocalCoreStartupParameter.bJITLoadStorelwzOff && (inst.OPCD == 32));
 
 	// Determine memory access size and sign extend
 	int accessSize = 0;
@@ -116,11 +116,11 @@ void Jit64::lXXx(UGeckoInstruction inst)
 		FixupBranch noIdle = J_CC(CC_NZ);
 
 		u32 registersInUse = CallerSavedRegistersInUse();
-		ABI_PushRegistersAndAdjustStack(registersInUse, false);
+		ABI_PushRegistersAndAdjustStack(registersInUse, 0);
 
 		ABI_CallFunctionC((void *)&PowerPC::OnIdle, PowerPC::ppcState.gpr[a] + (s32)(s16)inst.SIMM_16);
 
-		ABI_PopRegistersAndAdjustStack(registersInUse, false);
+		ABI_PopRegistersAndAdjustStack(registersInUse, 0);
 
 		// ! we must continue executing of the loop after exception handling, maybe there is still 0 in r0
 		//MOV(32, PPCSTATE(pc), Imm32(js.compilerPC));
@@ -238,7 +238,7 @@ void Jit64::lXXx(UGeckoInstruction inst)
 	if (update && storeAddress)
 	{
 		gpr.BindToRegister(a, true, true);
-		MEMCHECK_START
+		MEMCHECK_START(false)
 		MOV(32, gpr.R(a), opAddress);
 		MEMCHECK_END
 	}
@@ -264,14 +264,14 @@ void Jit64::dcbz(UGeckoInstruction inst)
 {
 	INSTRUCTION_START
 	JITDISABLE(bJITLoadStoreOff);
-	if (Core::g_CoreStartupParameter.bDCBZOFF)
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bDCBZOFF)
 		return;
 
 	int a = inst.RA;
 	int b = inst.RB;
 
 	u32 mem_mask = Memory::ADDR_MASK_HW_ACCESS;
-	if (Core::g_CoreStartupParameter.bMMU || Core::g_CoreStartupParameter.bTLBHack)
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bMMU || SConfig::GetInstance().m_LocalCoreStartupParameter.bTLBHack)
 		mem_mask |= Memory::ADDR_MASK_MEM1;
 
 	MOV(32, R(RSCRATCH), gpr.R(b));
@@ -279,18 +279,20 @@ void Jit64::dcbz(UGeckoInstruction inst)
 		ADD(32, R(RSCRATCH), gpr.R(a));
 	AND(32, R(RSCRATCH), Imm32(~31));
 	TEST(32, R(RSCRATCH), Imm32(mem_mask));
-	FixupBranch fast = J_CC(CC_Z, true);
+	FixupBranch slow = J_CC(CC_NZ, true);
 
 	// Should this code ever run? I can't find any games that use DCBZ on non-physical addresses, but
 	// supposedly there are, at least for some MMU titles. Let's be careful and support it to be sure.
+	SwitchToFarCode();
+	SetJumpTarget(slow);
 	MOV(32, M(&PC), Imm32(jit->js.compilerPC));
 	u32 registersInUse = CallerSavedRegistersInUse();
-	ABI_PushRegistersAndAdjustStack(registersInUse, false);
+	ABI_PushRegistersAndAdjustStack(registersInUse, 0);
 	ABI_CallFunctionR((void *)&Memory::ClearCacheLine, RSCRATCH);
-	ABI_PopRegistersAndAdjustStack(registersInUse, false);
+	ABI_PopRegistersAndAdjustStack(registersInUse, 0);
+	FixupBranch exit = J(true);
 
-	FixupBranch exit = J();
-	SetJumpTarget(fast);
+	SwitchToNearCode();
 	PXOR(XMM0, R(XMM0));
 	MOVAPS(MComplex(RMEM, RSCRATCH, SCALE_1, 0), XMM0);
 	MOVAPS(MComplex(RMEM, RSCRATCH, SCALE_1, 16), XMM0);
@@ -374,7 +376,7 @@ void Jit64::stX(UGeckoInstruction inst)
 				MOV(32, PPCSTATE(pc), Imm32(jit->js.compilerPC));
 
 				u32 registersInUse = CallerSavedRegistersInUse();
-				ABI_PushRegistersAndAdjustStack(registersInUse, false);
+				ABI_PushRegistersAndAdjustStack(registersInUse, 0);
 				switch (accessSize)
 				{
 				case 32:
@@ -387,7 +389,7 @@ void Jit64::stX(UGeckoInstruction inst)
 					ABI_CallFunctionAC((void *)&Memory::Write_U8, gpr.R(s), addr);
 					break;
 				}
-				ABI_PopRegistersAndAdjustStack(registersInUse, false);
+				ABI_PopRegistersAndAdjustStack(registersInUse, 0);
 				if (update)
 					gpr.SetImmediate32(a, addr);
 				return;
@@ -411,7 +413,7 @@ void Jit64::stX(UGeckoInstruction inst)
 
 		if (update && offset)
 		{
-			MEMCHECK_START
+			MEMCHECK_START(false)
 			gpr.KillImmediate(a, true, true);
 
 			ADD(32, gpr.R(a), Imm32((u32)offset));
@@ -433,10 +435,11 @@ void Jit64::stXx(UGeckoInstruction inst)
 
 	int a = inst.RA, b = inst.RB, s = inst.RS;
 	FALLBACK_IF(!a || a == s || a == b);
+	bool update = !!(inst.SUBOP10 & 32);
 
 	gpr.Lock(a, b, s);
 
-	if (inst.SUBOP10 & 32)
+	if (update)
 	{
 		gpr.BindToRegister(a, true, true);
 		ADD(32, gpr.R(a), gpr.R(b));
@@ -482,6 +485,14 @@ void Jit64::stXx(UGeckoInstruction inst)
 		reg_value = gpr.RX(s);
 	}
 	SafeWriteRegToReg(reg_value, RSCRATCH2, accessSize, 0, CallerSavedRegistersInUse());
+
+	if (update && js.memcheck)
+	{
+		// revert the address change if an exception occurred
+		MEMCHECK_START(true)
+		SUB(32, gpr.R(a), gpr.R(b));
+		MEMCHECK_END;
+	}
 
 	gpr.UnlockAll();
 	gpr.UnlockAllX();

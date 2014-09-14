@@ -11,8 +11,8 @@
 #include "AudioCommon/AudioCommon.h"
 
 #include "Common/Atomic.h"
-#include "Common/Common.h"
 #include "Common/CommonPaths.h"
+#include "Common/CommonTypes.h"
 #include "Common/CPUDetect.h"
 #include "Common/MathUtil.h"
 #include "Common/MemoryUtil.h"
@@ -88,8 +88,6 @@ static std::thread s_cpu_thread;
 static bool s_request_refresh_info = false;
 static int s_pause_and_lock_depth = 0;
 static bool s_is_framelimiter_temp_disabled = false;
-
-SCoreStartupParameter g_CoreStartupParameter;
 
 bool GetIsFramelimiterTempDisabled()
 {
@@ -179,12 +177,10 @@ bool Init()
 		s_emu_thread.join();
 	}
 
-	g_CoreStartupParameter = _CoreParameter;
-
 	INFO_LOG(OSREPORT, "Starting core = %s mode",
-		g_CoreStartupParameter.bWii ? "Wii" : "GameCube");
+		_CoreParameter.bWii ? "Wii" : "GameCube");
 	INFO_LOG(OSREPORT, "CPU Thread separate = %s",
-		g_CoreStartupParameter.bCPUThread ? "Yes" : "No");
+		_CoreParameter.bCPUThread ? "Yes" : "No");
 
 	Host_UpdateMainFrame(); // Disable any menus or buttons at boot
 
@@ -353,7 +349,7 @@ void EmuThread()
 
 	Pad::Initialize(s_window_handle);
 	// Load and Init Wiimotes - only if we are booting in wii mode
-	if (g_CoreStartupParameter.bWii)
+	if (_CoreParameter.bWii)
 	{
 		Wiimote::Initialize(s_window_handle, !s_state_filename.empty());
 

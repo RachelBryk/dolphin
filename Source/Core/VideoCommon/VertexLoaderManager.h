@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 #include "VideoCommon/NativeVertexFormat.h"
 
 namespace VertexLoaderManager
@@ -24,6 +24,6 @@ namespace VertexLoaderManager
 	void AppendListToString(std::string *dest);
 
 	NativeVertexFormat* GetCurrentVertexFormat();
-};
+}
 
 void RecomputeCachedArraybases();

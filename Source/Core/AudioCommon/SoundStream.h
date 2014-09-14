@@ -6,7 +6,7 @@
 
 #include "AudioCommon/Mixer.h"
 #include "AudioCommon/WaveFile.h"
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 
 class SoundStream
 {
@@ -34,7 +34,7 @@ public:
 	virtual void Clear(bool mute) { m_muted = mute; }
 	bool IsMuted() const { return m_muted; }
 
-	virtual void StartLogAudio(const char *filename)
+	virtual void StartLogAudio(const std::string& filename)
 	{
 		if (! m_logAudio)
 		{

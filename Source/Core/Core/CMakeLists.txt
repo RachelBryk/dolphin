@@ -132,6 +132,7 @@ set(SRCS	ActionReplay.cpp
 			HW/WiimoteEmu/Encryption.cpp
 			HW/WiimoteEmu/Speaker.cpp
 			HW/WiimoteReal/WiimoteReal.cpp
+			HW/WiiSaveCrypted.cpp
 			IPC_HLE/ICMPLin.cpp
 			IPC_HLE/WII_IPC_HLE.cpp
 			IPC_HLE/WII_IPC_HLE_Device_DI.cpp
@@ -197,8 +198,7 @@ if(_M_X86)
 			PowerPC/JitCommon/JitBackpatch.cpp
 			PowerPC/JitCommon/JitAsmCommon.cpp
 			PowerPC/JitCommon/Jit_Util.cpp)
-endif()
-if(_M_ARM_32)
+elseif(_M_ARM_32)
 	set(SRCS ${SRCS}
 			ArmMemTools.cpp
 			PowerPC/JitArm32/Jit.cpp
@@ -217,6 +217,16 @@ if(_M_ARM_32)
 			PowerPC/JitArm32/JitArm_SystemRegisters.cpp
 			PowerPC/JitArm32/JitArm_LoadStoreFloating.cpp
 			)
+elseif(_M_ARM_64)
+	set(SRCS ${SRCS}
+	         PowerPC/JitArm64/Jit.cpp
+	         PowerPC/JitArm64/JitAsm.cpp
+	         PowerPC/JitArm64/JitArm64Cache.cpp
+	         PowerPC/JitArm64/JitArm64_RegCache.cpp
+	         PowerPC/JitArm64/JitArm64_Branch.cpp
+	         PowerPC/JitArm64/JitArm64_LoadStore.cpp
+	         PowerPC/JitArm64/JitArm64_SystemRegisters.cpp
+	         PowerPC/JitArm64/JitArm64_Tables.cpp)
 endif()
 
 set(LIBS

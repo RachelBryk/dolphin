@@ -556,7 +556,7 @@ u32 PPCAnalyzer::Analyze(u32 address, CodeBlock *block, CodeBuffer *buffer, u32 
 		return address;
 	}
 
-	if (Core::g_CoreStartupParameter.bMMU && (address & JIT_ICACHE_VMEM_BIT))
+	if (SConfig::GetInstance().m_LocalCoreStartupParameter.bMMU && (address & JIT_ICACHE_VMEM_BIT))
 	{
 		if (!Memory::TranslateAddress(address, Memory::FLAG_OPCODE))
 		{
@@ -676,12 +676,12 @@ u32 PPCAnalyzer::Analyze(u32 address, CodeBlock *block, CodeBuffer *buffer, u32 
 
 			if (!follow)
 			{
+				address += 4;
 				if (!conditional_continue && opinfo->flags & FL_ENDBLOCK) //right now we stop early
 				{
 					found_exit = true;
 					break;
 				}
-				address += 4;
 			}
 			// XXX: We don't support inlining yet.
 #if 0

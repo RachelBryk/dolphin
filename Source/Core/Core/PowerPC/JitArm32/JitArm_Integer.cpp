@@ -3,7 +3,7 @@
 // Refer to the license.txt file included.
 
 #include "Common/ArmEmitter.h"
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
@@ -13,6 +13,8 @@
 #include "Core/PowerPC/JitArm32/Jit.h"
 #include "Core/PowerPC/JitArm32/JitAsm.h"
 #include "Core/PowerPC/JitArm32/JitRegCache.h"
+
+using namespace ArmGen;
 
 void JitArm::ComputeRC(ARMReg value, int cr)
 {
@@ -915,12 +917,12 @@ void JitArm::twx(UGeckoInstruction inst)
 
 	if (inst.OPCD == 3) // twi
 	{
-		CMP(gpr.R(a), gpr.R(inst.RB));
+		MOVI2R(RB, (s32)(s16)inst.SIMM_16);
+		CMP(gpr.R(a), RB);
 	}
 	else // tw
 	{
-		MOVI2R(RB, (s32)(s16)inst.SIMM_16);
-		CMP(gpr.R(a), RB);
+		CMP(gpr.R(a), gpr.R(inst.RB));
 	}
 
 	FixupBranch al = B_CC(CC_LT);

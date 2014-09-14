@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "Common/Common.h"
+#include "Common/CommonTypes.h"
 class PointerWrap;
 
 namespace GPFifo
@@ -43,4 +43,4 @@ void FastWrite8(const u8 _iValue);
 void FastWrite16(const u16 _iValue);
 void FastWrite32(const u32 _iValue);
 void FastWrite64(const u64 _iValue);
-};
+}
