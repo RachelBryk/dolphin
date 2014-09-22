@@ -64,6 +64,8 @@ enum NormalSSEOps
 	sseMOVLPDtoRM  = 0x13,
 	sseMOVHPDfromRM= 0x16,
 	sseMOVHPDtoRM  = 0x17,
+	sseMOVHLPS     = 0x12,
+	sseMOVLHPS     = 0x16,
 	sseMASKMOVDQU  = 0xF7,
 	sseLDDQU       = 0xF0,
 	sseSHUF        = 0xC6,
@@ -750,12 +752,14 @@ void XEmitter::IDIV(int bits, OpArg src) {WriteMulDivType(bits, src, 7);}
 void XEmitter::NEG(int bits, OpArg src)  {WriteMulDivType(bits, src, 3);}
 void XEmitter::NOT(int bits, OpArg src)  {WriteMulDivType(bits, src, 2);}
 
-void XEmitter::WriteBitSearchType(int bits, X64Reg dest, OpArg src, u8 byte2)
+void XEmitter::WriteBitSearchType(int bits, X64Reg dest, OpArg src, u8 byte2, bool rep)
 {
 	_assert_msg_(DYNA_REC, !src.IsImm(), "WriteBitSearchType - Imm argument");
 	src.operandReg = (u8)dest;
 	if (bits == 16)
 		Write8(0x66);
+	if (rep)
+		Write8(0xF3);
 	src.WriteRex(this, bits, bits);
 	Write8(0x0F);
 	Write8(byte2);
@@ -771,6 +775,19 @@ void XEmitter::MOVNTI(int bits, OpArg dest, X64Reg src)
 
 void XEmitter::BSF(int bits, X64Reg dest, OpArg src) {WriteBitSearchType(bits,dest,src,0xBC);} //bottom bit to top bit
 void XEmitter::BSR(int bits, X64Reg dest, OpArg src) {WriteBitSearchType(bits,dest,src,0xBD);} //top bit to bottom bit
+
+void XEmitter::TZCNT(int bits, X64Reg dest, OpArg src)
+{
+	if (!cpu_info.bBMI1)
+		PanicAlert("Trying to use BMI1 on a system that doesn't support it. Bad programmer.");
+	WriteBitSearchType(bits, dest, src, 0xBC, true);
+}
+void XEmitter::LZCNT(int bits, X64Reg dest, OpArg src)
+{
+	if (!cpu_info.bLZCNT)
+		PanicAlert("Trying to use LZCNT on a system that doesn't support it. Bad programmer.");
+	WriteBitSearchType(bits, dest, src, 0xBD, true);
+}
 
 void XEmitter::MOVSX(int dbits, int sbits, X64Reg dest, OpArg src)
 {
@@ -1207,6 +1224,7 @@ void XEmitter::WriteNormalOp(XEmitter *emit, int bits, NormalOp op, const OpArg 
 		}
 		else
 		{
+			_assert_msg_(DYNA_REC, a2.IsSimpleReg() || a2.IsImm(), "WriteNormalOp - a1 and a2 cannot both be memory");
 			a1.WriteNormalOp(emit, true, op, a2, bits);
 		}
 	}
@@ -1510,6 +1528,9 @@ void XEmitter::MOVHPD(X64Reg regOp, OpArg arg)  {WriteSSEOp(64, sseMOVHPDfromRM,
 void XEmitter::MOVLPD(OpArg arg, X64Reg regOp)  {WriteSSEOp(64, sseMOVLPDtoRM, false, regOp, arg);}
 void XEmitter::MOVHPD(OpArg arg, X64Reg regOp)  {WriteSSEOp(64, sseMOVHPDtoRM, false, regOp, arg);}
 
+void XEmitter::MOVHLPS(X64Reg regOp1, X64Reg regOp2) {WriteSSEOp(32, sseMOVHLPS, true, regOp1, R(regOp2));}
+void XEmitter::MOVLHPS(X64Reg regOp1, X64Reg regOp2) {WriteSSEOp(32, sseMOVLHPS, true, regOp1, R(regOp2));}
+
 void XEmitter::CVTPS2PD(X64Reg regOp, OpArg arg) {WriteSSEOp(32, 0x5A, true, regOp, arg);}
 void XEmitter::CVTPD2PS(X64Reg regOp, OpArg arg) {WriteSSEOp(64, 0x5A, true, regOp, arg);}
 
@@ -1750,6 +1771,8 @@ void XEmitter::ANDN(int bits, X64Reg regOp1, X64Reg regOp2, OpArg arg) {WriteBMI
 void XEmitter::LOCK()  { Write8(0xF0); }
 void XEmitter::REP()   { Write8(0xF3); }
 void XEmitter::REPNE() { Write8(0xF2); }
+void XEmitter::FSOverride() { Write8(0x64); }
+void XEmitter::GSOverride() { Write8(0x65); }
 
 void XEmitter::FWAIT()
 {

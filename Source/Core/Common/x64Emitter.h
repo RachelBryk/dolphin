@@ -266,7 +266,7 @@ private:
 	void WriteSimple1Byte(int bits, u8 byte, X64Reg reg);
 	void WriteSimple2Byte(int bits, u8 byte1, u8 byte2, X64Reg reg);
 	void WriteMulDivType(int bits, OpArg src, int ext);
-	void WriteBitSearchType(int bits, X64Reg dest, OpArg src, u8 byte2);
+	void WriteBitSearchType(int bits, X64Reg dest, OpArg src, u8 byte2, bool rep = false);
 	void WriteShift(int bits, OpArg dest, OpArg &shift, int ext);
 	void WriteBitTest(int bits, OpArg &dest, OpArg &index, int ext);
 	void WriteMXCSR(OpArg arg, int ext);
@@ -454,6 +454,11 @@ public:
 	// Available only on Atom or >= Haswell so far. Test with cpu_info.bMOVBE.
 	void MOVBE(int dbits, const OpArg& dest, const OpArg& src);
 
+	// Available only on AMD >= Phenom or Intel >= Haswell
+	void LZCNT(int bits, X64Reg dest, OpArg src);
+	// Note: this one is actually part of BMI1
+	void TZCNT(int bits, X64Reg dest, OpArg src);
+
 	// WARNING - These two take 11-13 cycles and are VectorPath! (AMD64)
 	void STMXCSR(OpArg memloc);
 	void LDMXCSR(OpArg memloc);
@@ -462,6 +467,8 @@ public:
 	void LOCK();
 	void REP();
 	void REPNE();
+	void FSOverride();
+	void GSOverride();
 
 	// x87
 	enum x87StatusWordBits {
@@ -575,6 +582,9 @@ public:
 	void MOVHPD(X64Reg regOp, OpArg arg);
 	void MOVLPD(OpArg arg, X64Reg regOp);
 	void MOVHPD(OpArg arg, X64Reg regOp);
+
+	void MOVHLPS(X64Reg regOp1, X64Reg regOp2);
+	void MOVLHPS(X64Reg regOp1, X64Reg regOp2);
 
 	void MOVD_xmm(X64Reg dest, const OpArg &arg);
 	void MOVQ_xmm(X64Reg dest, OpArg arg);

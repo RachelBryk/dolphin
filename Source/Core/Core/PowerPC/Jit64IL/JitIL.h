@@ -36,12 +36,8 @@
 #include "Core/PowerPC/JitILCommon/IR.h"
 #include "Core/PowerPC/JitILCommon/JitILBase.h"
 
-class JitIL : public JitILBase, public EmuCodeBlock
+class JitIL : public JitILBase
 {
-private:
-	JitBlockCache blocks;
-	TrampolineCache trampolines;
-
 public:
 	Jit64AsmRoutineManager asm_routines;
 
@@ -62,9 +58,7 @@ public:
 
 	JitBlockCache *GetBlockCache() override { return &blocks; }
 
-	const u8 *BackPatch(u8 *codePtr, u32 em_address, void *ctx) override { return nullptr; };
-
-	bool IsInCodeSpace(u8 *ptr) override { return IsInSpace(ptr); }
+	bool HandleFault(uintptr_t access_address, SContext* ctx) override { return false; }
 
 	void ClearCache() override;
 	const u8 *GetDispatcher()
@@ -115,4 +109,5 @@ public:
 	void DynaRunTable31(UGeckoInstruction _inst) override;
 	void DynaRunTable59(UGeckoInstruction _inst) override;
 	void DynaRunTable63(UGeckoInstruction _inst) override;
+
 };

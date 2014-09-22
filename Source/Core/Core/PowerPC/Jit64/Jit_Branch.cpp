@@ -92,7 +92,7 @@ void Jit64::bx(UGeckoInstruction inst)
 		// make idle loops go faster
 		js.downcountAmount += 8;
 	}
-	WriteExit(destination);
+	WriteExit(destination, inst.LK, js.compilerPC + 4);
 }
 
 // TODO - optimize to hell and beyond
@@ -133,7 +133,7 @@ void Jit64::bcx(UGeckoInstruction inst)
 
 	gpr.Flush(FLUSH_MAINTAIN_STATE);
 	fpr.Flush(FLUSH_MAINTAIN_STATE);
-	WriteExit(destination);
+	WriteExit(destination, inst.LK, js.compilerPC + 4);
 
 	if ((inst.BO & BO_DONT_CHECK_CONDITION) == 0)
 		SetJumpTarget( pConditionDontBranch );
@@ -168,7 +168,7 @@ void Jit64::bcctrx(UGeckoInstruction inst)
 		if (inst.LK_3)
 			MOV(32, PPCSTATE_LR, Imm32(js.compilerPC + 4)); // LR = PC + 4;
 		AND(32, R(RSCRATCH), Imm32(0xFFFFFFFC));
-		WriteExitDestInRSCRATCH();
+		WriteExitDestInRSCRATCH(inst.LK_3, js.compilerPC + 4);
 	}
 	else
 	{
@@ -187,7 +187,7 @@ void Jit64::bcctrx(UGeckoInstruction inst)
 
 		gpr.Flush(FLUSH_MAINTAIN_STATE);
 		fpr.Flush(FLUSH_MAINTAIN_STATE);
-		WriteExitDestInRSCRATCH();
+		WriteExitDestInRSCRATCH(inst.LK_3, js.compilerPC + 4);
 		// Would really like to continue the block here, but it ends. TODO.
 		SetJumpTarget(b);
 
@@ -222,10 +222,10 @@ void Jit64::bclrx(UGeckoInstruction inst)
 		                                        !(inst.BO_2 & BO_BRANCH_IF_TRUE));
 	}
 
-		// This below line can be used to prove that blr "eats flags" in practice.
-		// This observation will let us do a lot of fun observations.
+	// This below line can be used to prove that blr "eats flags" in practice.
+	// This observation could let us do some useful optimizations.
 #ifdef ACID_TEST
-		AND(32, PPCSTATE(cr), Imm32(~(0xFF000000)));
+	AND(32, PPCSTATE(cr), Imm32(~(0xFF000000)));
 #endif
 
 	MOV(32, R(RSCRATCH), PPCSTATE_LR);
@@ -235,7 +235,7 @@ void Jit64::bclrx(UGeckoInstruction inst)
 
 	gpr.Flush(FLUSH_MAINTAIN_STATE);
 	fpr.Flush(FLUSH_MAINTAIN_STATE);
-	WriteExitDestInRSCRATCH();
+	WriteBLRExit();
 
 	if ((inst.BO & BO_DONT_CHECK_CONDITION) == 0)
 		SetJumpTarget( pConditionDontBranch );

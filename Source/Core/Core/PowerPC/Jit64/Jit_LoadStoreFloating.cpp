@@ -27,10 +27,9 @@ void Jit64::lfXXX(UGeckoInstruction inst)
 	int a = inst.RA;
 	int b = inst.RB;
 
-	FALLBACK_IF((!indexed && !a) || (update && a == d));
+	FALLBACK_IF(!indexed && !a);
 
-	if (update)
-		gpr.BindToRegister(a, true, true);
+	gpr.BindToRegister(a, true, update);
 
 	s32 offset = 0;
 	OpArg addr = gpr.R(a);
@@ -103,7 +102,7 @@ void Jit64::stfXXX(UGeckoInstruction inst)
 	int a = inst.RA;
 	int b = inst.RB;
 
-	FALLBACK_IF((!indexed && !a) || (update && (a == s || a == b)));
+	FALLBACK_IF((!indexed && !a) || (update && js.memcheck && a == b));
 
 	s32 offset = 0;
 	s32 imm = (s16)inst.SIMM_16;
