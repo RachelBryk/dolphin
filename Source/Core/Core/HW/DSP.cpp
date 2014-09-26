@@ -39,8 +39,13 @@
 #include "Core/HW/ProcessorInterface.h"
 #include "Core/PowerPC/PowerPC.h"
 
+#include "AudioCommon/AudioDumper.h"
+#include "AudioCommon/AudioCommon.h"
+#include "VideoCommon/AVIDump.h"
+
 namespace DSP
 {
+	AudioDumper *HackDump;
 
 // register offsets
 enum
@@ -251,6 +256,9 @@ void Init(bool hle)
 
 	et_GenerateDSPInterrupt = CoreTiming::RegisterEvent("DSPint", GenerateDSPInterrupt);
 	et_CompleteARAM = CoreTiming::RegisterEvent("ARAMint", CompleteARAM);
+
+	// AUDIO DUMP HACK
+	HackDump = new AudioDumper(std::string("dspdump"));
 }
 
 void Shutdown()
@@ -264,6 +272,9 @@ void Shutdown()
 	dsp_emulator->Shutdown();
 	delete dsp_emulator;
 	dsp_emulator = nullptr;
+
+	delete HackDump;
+	HackDump = 0;
 }
 
 void RegisterMMIO(MMIO::Mapping* mmio, u32 base)
@@ -480,8 +491,9 @@ void UpdateDSPSlice(int cycles)
 // This happens at 4 khz, since 32 bytes at 4khz = 4 bytes at 32 khz (16bit stereo pcm)
 void UpdateAudioDMA()
 {
-	static short zero_samples[8*2] = { 0 };
-	if (g_audioDMA.AudioDMAControl.Enable)
+	int oldrate = 32000;
+
+	if (g_audioDMA.AudioDMAControl.Enable && g_audioDMA.remaining_blocks_count)
 	{
 		// Read audio at g_audioDMA.current_source_address in RAM and push onto an
 		// external audio fifo in the emulator, to be mixed with the disc
@@ -495,22 +507,29 @@ void UpdateAudioDMA()
 
 		if (g_audioDMA.remaining_blocks_count == 0)
 		{
-			g_audioDMA.current_source_address = g_audioDMA.SourceAddress;
-			g_audioDMA.remaining_blocks_count = g_audioDMA.AudioDMAControl.NumBlocks;
-
-			if (g_audioDMA.remaining_blocks_count != 0)
-			{
-				// We make the samples ready as soon as possible
-				void *address = Memory::GetPointer(g_audioDMA.SourceAddress);
-				AudioCommon::SendAIBuffer((short*)address, g_audioDMA.AudioDMAControl.NumBlocks * 8);
-			}
+			void *address = Memory::GetPointer(g_audioDMA.SourceAddress);
+			unsigned samples = 8 * g_audioDMA.AudioDMAControl.NumBlocks;
+			if (SConfig::GetInstance().m_DumpAudio)
+				HackDump->dumpsamplesBE((short*)address, samples, oldrate);
+			if (SConfig::GetInstance().m_DumpAudioToAVI)
+				AVIDump::AddSoundBE((short*)address, samples, oldrate);
+			AudioCommon::SendAIBuffer((short*)address, samples);
 			GenerateDSPInterrupt(DSP::INT_AID);
 		}
 	}
 	else
 	{
-		AudioCommon::SendAIBuffer(&zero_samples[0], 8);
+		// numsamples = 8 always
+		const short blank[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		if (SConfig::GetInstance().m_DumpAudio)
+			HackDump->dumpsamples(blank, 8, oldrate);
+		if (SConfig::GetInstance().m_DumpAudioToAVI)
+			AVIDump::AddSound(blank, 8, oldrate);
+		// Send silence. Yeah, it's a bit of a waste to sample rate convert
+		// silence.  or hm. Maybe we shouldn't do this :)
+		AudioCommon::SendAIBuffer(0, AudioInterface::GetAIDSampleRate());
 	}
+	oldrate = AudioInterface::GetAIDSampleRate();
 }
 
 static void Do_ARAM_DMA()
