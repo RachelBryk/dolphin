@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include "Common/BitField.h"
 #include "Common/CommonTypes.h"
 
 // --- Gekko Instruction ---
@@ -300,25 +301,28 @@ union UGeckoInstruction
 // --- Gekko Special Registers ---
 //
 
+// quantize types
+enum EQuantizeType : u32
+{
+	QUANTIZE_FLOAT = 0,
+	QUANTIZE_U8    = 4,
+	QUANTIZE_U16   = 5,
+	QUANTIZE_S8    = 6,
+	QUANTIZE_S16   = 7,
+};
 
 // GQR Register
 union UGQR
 {
+	BitField< 0, 3, EQuantizeType> st_type;
+	BitField< 8, 6, u32> st_scale;
+	BitField<16, 3, EQuantizeType> ld_type;
+	BitField<24, 6, u32> ld_scale;
+
 	u32 Hex;
-	struct
-	{
-		u32 ST_TYPE  : 3;
-		u32          : 5;
-		u32 ST_SCALE : 6;
-		u32          : 2;
-		u32 LD_TYPE  : 3;
-		u32          : 5;
-		u32 LD_SCALE : 6;
-		u32          : 2;
-	};
 
 	UGQR(u32 _hex) { Hex = _hex; }
-	UGQR()         {Hex = 0;  }
+	UGQR()         { Hex = 0;  }
 };
 
 // FPU Register
@@ -335,16 +339,17 @@ union UFPR
 #define XER_CA_SHIFT 29
 #define XER_OV_SHIFT 30
 #define XER_SO_SHIFT 31
-#define XER_CA_MASK (1U << XER_CA_SHIFT)
-#define XER_OV_MASK (1U << XER_OV_SHIFT)
-#define XER_SO_MASK (1U << XER_SO_SHIFT)
+#define XER_OV_MASK 1
+#define XER_SO_MASK 2
 // XER
 union UReg_XER
 {
 	struct
 	{
 		u32 BYTE_COUNT : 7;
-		u32            : 22;
+		u32            : 1;
+		u32 BYTE_CMP   : 8;
+		u32            : 13;
 		u32 CA         : 1;
 		u32 OV         : 1;
 		u32 SO         : 1;
@@ -407,6 +412,7 @@ const u32 FPSCR_VXVC   = 1U << (31 - 12);
 const u32 FPSCR_VXSOFT = 1U << (31 - 21);
 const u32 FPSCR_VXSQRT = 1U << (31 - 22);
 const u32 FPSCR_VXCVI  = 1U << (31 - 23);
+const u32 FPSCR_VE     = 1U << (31 - 24);
 
 const u32 FPSCR_VX_ANY = FPSCR_VXSNAN | FPSCR_VXISI | FPSCR_VXIDI | FPSCR_VXZDZ | FPSCR_VXIMZ |
                          FPSCR_VXVC | FPSCR_VXSOFT | FPSCR_VXSQRT | FPSCR_VXCVI;
@@ -720,17 +726,6 @@ union UReg_PTE
 //
 // --- Gekko Types and Defs ---
 //
-
-
-// quantize types
-enum EQuantizeType
-{
-	QUANTIZE_FLOAT = 0,
-	QUANTIZE_U8    = 4,
-	QUANTIZE_U16   = 5,
-	QUANTIZE_S8    = 6,
-	QUANTIZE_S16   = 7,
-};
 
 // branches
 enum
