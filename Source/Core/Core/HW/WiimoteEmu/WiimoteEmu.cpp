@@ -331,7 +331,7 @@ bool Wiimote::Step()
 	m_rumble->controls[0]->control_ref->State(m_rumble_on);
 
 	// when a movie is active, this button status update is disabled (moved), because movies only record data reports.
-	if (!(Movie::IsMovieActive()) || NetPlay::IsNetPlayRunning())
+	if (!Core::g_want_determinism)
 	{
 		UpdateButtonsStatus();
 	}
@@ -385,7 +385,7 @@ void Wiimote::UpdateButtonsStatus()
 void Wiimote::GetCoreData(u8* const data)
 {
 	// when a movie is active, the button update happens here instead of Wiimote::Step, to avoid potential desync issues.
-	if (Movie::IsMovieActive() || NetPlay::IsNetPlayRunning())
+	if (Core::g_want_determinism)
 	{
 		UpdateButtonsStatus();
 	}
@@ -626,7 +626,7 @@ void Wiimote::Update()
 
 	const ReportFeatures& rptf = reporting_mode_features[m_reporting_mode - WM_REPORT_CORE];
 	s8 rptf_size = rptf.size;
-	if (Movie::IsPlayingInput() && Movie::PlayWiimote(m_index, data, rptf))
+	if (Movie::IsPlayingInput() && Movie::PlayWiimote(m_index, data, rptf, m_extension->active_extension, m_ext_key))
 	{
 		if (rptf.core)
 			m_status.buttons = *(wm_core*)(data + rptf.core);
@@ -738,7 +738,7 @@ void Wiimote::Update()
 	}
 	if (!Movie::IsPlayingInput())
 	{
-		Movie::CheckWiimoteStatus(m_index, data, rptf);
+		Movie::CheckWiimoteStatus(m_index, data, rptf, m_extension->active_extension, m_ext_key);
 	}
 
 	// don't send a data report if auto reporting is off

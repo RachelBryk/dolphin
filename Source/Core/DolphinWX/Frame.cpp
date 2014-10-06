@@ -230,6 +230,7 @@ EVT_MENU(IDM_RECORDREADONLY, CFrame::OnRecordReadOnly)
 EVT_MENU(IDM_TASINPUT, CFrame::OnTASInput)
 EVT_MENU(IDM_TOGGLE_PAUSEMOVIE, CFrame::OnTogglePauseMovie)
 EVT_MENU(IDM_SHOWLAG, CFrame::OnShowLag)
+EVT_MENU(IDM_SHOWFRAMECOUNT, CFrame::OnShowFrameCount)
 EVT_MENU(IDM_FRAMESTEP, CFrame::OnFrameStep)
 EVT_MENU(IDM_SCREENSHOT, CFrame::OnScreenshot)
 EVT_MENU(wxID_PREFERENCES, CFrame::OnConfigMain)
@@ -708,7 +709,7 @@ void CFrame::OnHostMessage(wxCommandEvent& event)
 			wxString caption = event.GetString().BeforeFirst(':');
 			wxString text = event.GetString().AfterFirst(':');
 			bPanicResult = (wxYES == wxMessageBox(text,
-						caption, event.GetInt() ? wxYES_NO : wxOK, wxGetActiveWindow()));
+						caption, event.GetInt() ? wxYES_NO : wxOK, wxWindow::FindFocus()));
 			panic_event.Set();
 		}
 		break;
@@ -805,11 +806,11 @@ bool CFrame::UIHasFocus()
 	// UIHasFocus should return true any time any one of our UI
 	// windows has the focus, including any dialogs or other windows.
 	//
-	// wxGetActiveWindow() returns the current wxWindow which has
+	// wxWindow::FindFocus() returns the current wxWindow which has
 	// focus. If it's not one of our windows, then it will return
 	// null.
 
-	wxWindow *focusWindow = wxGetActiveWindow();
+	wxWindow *focusWindow = wxWindow::FindFocus();
 	return (focusWindow != nullptr);
 }
 
