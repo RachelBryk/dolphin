@@ -62,17 +62,35 @@ struct wm_ir_extended
 	u8 yhi : 2;
 };
 
-struct wm_extension
+// Nunchuk
+union wm_nc_core
 {
-	u8 jx; // joystick x, y
+	u8 hex;
+
+	struct
+	{
+		u8 z : 1;
+		u8 c : 1;
+
+		// LSBs of accelerometer
+		u8 acc_x_lsb : 2;
+		u8 acc_y_lsb : 2;
+		u8 acc_z_lsb : 2;
+	};
+};
+
+struct wm_nc
+{
+	// joystick x, y
+	u8 jx;
 	u8 jy;
-	u8 ax; // accelerometer
+
+	// accelerometer
+	u8 ax;
 	u8 ay;
 	u8 az;
-	u8 azlow : 2;
-	u8 aylow : 2;
-	u8 axlow : 2;
-	u8 bt : 2; // buttons
+
+	wm_nc_core bt; // buttons + accelerometer LSBs
 };
 
 struct wm_classic_extension
@@ -310,7 +328,7 @@ struct wm_report_core_accel_ext16
 {
 	wm_core c;
 	wm_accel a;
-	wm_extension ext;
+	wm_nc ext;
 	//wm_ir_basic ir[2];
 	u8 pad[10];
 
@@ -325,7 +343,7 @@ struct wm_report_core_accel_ir10_ext6
 	wm_accel a;
 	wm_ir_basic ir[2];
 	//u8 ext[6];
-	wm_extension ext;
+	wm_nc ext;
 };
 
 #define WM_REPORT_EXT21 0x3d // never used?

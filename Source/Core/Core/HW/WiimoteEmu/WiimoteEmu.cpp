@@ -566,7 +566,7 @@ void Wiimote::GetExtData(u8* const data)
 
 	// i dont think anything accesses the extension data like this, but ill support it. Indeed, commercial games don't do this.
 	// i think it should be unencrpyted in the register, encrypted when read.
-	memcpy(m_reg_ext.controller_data, data, sizeof(wm_extension));
+	memcpy(m_reg_ext.controller_data, data, sizeof(wm_nc));
 
 	// motionplus pass-through modes
 	if (m_motion_plus_active)
@@ -606,7 +606,7 @@ void Wiimote::GetExtData(u8* const data)
 	}
 
 	if (0xAA == m_reg_ext.encryption)
-		WiimoteEncrypt(&m_ext_key, data, 0x00, sizeof(wm_extension));
+		WiimoteEncrypt(&m_ext_key, data, 0x00, sizeof(wm_nc));
 }
 
 void Wiimote::Update()
@@ -695,7 +695,7 @@ void Wiimote::Update()
 							// ext
 							// use real-ext data if an emu-extention isn't chosen
 							if (real_rptf.ext && rptf.ext && (0 == m_extension->switch_extension))
-								memcpy(data + rptf.ext, real_data + real_rptf.ext, sizeof(wm_extension));
+								memcpy(data + rptf.ext, real_data + real_rptf.ext, sizeof(wm_nc));
 						}
 						else if (WM_ACK_DATA != real_data[1] || m_extension->active_extension > 0)
 							rptf_size = 0;

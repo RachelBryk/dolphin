@@ -640,16 +640,17 @@ static void SetWiiInputDisplayString(int remoteID, u8* const data, const Wiimote
 	// Nunchuck
 	if (extData && ext == 1)
 	{
-		wm_extension nunchuck;
-		memcpy(&nunchuck, extData, sizeof(wm_extension));
-		WiimoteDecrypt(&key, (u8*)&nunchuck, 0, sizeof(wm_extension));
-		nunchuck.bt = nunchuck.bt ^ 0xFF;
+		wm_nc nunchuck;
+		memcpy(&nunchuck, extData, sizeof(wm_nc));
+		WiimoteDecrypt(&key, (u8*)&nunchuck, 0, sizeof(wm_nc));
+		nunchuck.bt.hex = nunchuck.bt.hex ^ 0x3;
 
-		std::string accel = StringFromFormat(" N-ACC:%d,%d,%d", (nunchuck.ax << 2) | nunchuck.axlow, (nunchuck.ay << 2) | nunchuck.aylow, (nunchuck.az << 2) | nunchuck.azlow);
+		std::string accel = StringFromFormat(" N-ACC:%d,%d,%d", 
+			(nunchuck.ax << 2) | nunchuck.bt.acc_x_lsb, (nunchuck.ay << 2) | nunchuck.bt.acc_y_lsb, (nunchuck.az << 2) | nunchuck.bt.acc_z_lsb);
 
-		if (nunchuck.bt & WiimoteEmu::Nunchuk::BUTTON_C)
+		if (nunchuck.bt.hex & WiimoteEmu::Nunchuk::BUTTON_C)
 			s_InputDisplay[controllerID].append(" C");
-		if (nunchuck.bt & WiimoteEmu::Nunchuk::BUTTON_Z)
+		if (nunchuck.bt.hex & WiimoteEmu::Nunchuk::BUTTON_Z)
 			s_InputDisplay[controllerID].append(" Z");
 		s_InputDisplay[controllerID].append(accel);
 		s_InputDisplay[controllerID].append(Analog2DToString(nunchuck.jx, nunchuck.jy, " ANA"));

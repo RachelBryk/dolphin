@@ -115,9 +115,9 @@ void TASInputDlg::CreateWiiLayout()
 	zCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 255, 154);
 	wxStaticBoxSizer* const axisBox = CreateAccellLayout(&xCont, &yCont, &zCont, "Orientation");
 
-	nxCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1024, 512);
-	nyCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1024, 512);
-	nzCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1024, 512);
+	nxCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1023, 512);
+	nyCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1023, 512);
+	nzCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1023, 512);
 	wxStaticBoxSizer* const nunchuckaxisBox = CreateAccellLayout(&nxCont, &nyCont, &nzCont, "Nunchuck orientation");
 
 	for (unsigned int i = 0; i < 10; ++i)
@@ -446,11 +446,11 @@ void TASInputDlg::GetKeyBoardInput(u8* data, WiimoteEmu::ReportFeatures rptf, in
 
 	if (extData)
 	{
-		wm_extension& nunchuck = *(wm_extension*)extData;
-		WiimoteDecrypt(&key, (u8*)&nunchuck, 0, sizeof(wm_extension));
-		nunchuck.bt = nunchuck.bt ^ 0xFF;
-		SetButtonValue(Buttons[11], (nunchuck.bt & WiimoteEmu::Nunchuk::BUTTON_C) != 0);
-		SetButtonValue(Buttons[12], (nunchuck.bt & WiimoteEmu::Nunchuk::BUTTON_Z) != 0);
+		wm_nc& nunchuck = *(wm_nc*)extData;
+		WiimoteDecrypt(&key, (u8*)&nunchuck, 0, sizeof(wm_nc));
+		nunchuck.bt.hex = nunchuck.bt.hex ^ 0x3;
+		SetButtonValue(Buttons[11], nunchuck.bt.c != 0);
+		SetButtonValue(Buttons[12], nunchuck.bt.z != 0);
 	}
 }
 
@@ -540,22 +540,22 @@ void TASInputDlg::GetValues(u8* data, WiimoteEmu::ReportFeatures rptf, int ext, 
 	}
 	if (extData && ext == 1)
 	{
-		wm_extension& nunchuck = *(wm_extension*)extData;
+		wm_nc& nunchuck = *(wm_nc*)extData;
 
 		nunchuck.jx = CStick.xCont.value;
 		nunchuck.jy = CStick.yCont.value;
 
 		nunchuck.ax    = nxCont.value >> 2;
-		nunchuck.axlow = nxCont.value & 0x3;
+		nunchuck.bt.acc_x_lsb = nxCont.value & 0x3;
 		nunchuck.ay    = nyCont.value >> 2;
-		nunchuck.aylow = nyCont.value & 0x3;
+		nunchuck.bt.acc_y_lsb = nyCont.value & 0x3;
 		nunchuck.az    = nzCont.value >> 2;
-		nunchuck.azlow = nzCont.value & 0x3;
+		nunchuck.bt.acc_z_lsb = nzCont.value & 0x3;
 
-		nunchuck.bt |= (Buttons[11]->Checkbox->IsChecked()) ? WiimoteEmu::Nunchuk::BUTTON_C : 0;
-		nunchuck.bt |= (Buttons[12]->Checkbox->IsChecked()) ? WiimoteEmu::Nunchuk::BUTTON_Z : 0;
-		nunchuck.bt = nunchuck.bt ^ 0xFF;
-		WiimoteEncrypt(&key, (u8*)&nunchuck, 0, sizeof(wm_extension));
+		nunchuck.bt.hex |= (Buttons[11]->Checkbox->IsChecked()) ? WiimoteEmu::Nunchuk::BUTTON_C : 0;
+		nunchuck.bt.hex |= (Buttons[12]->Checkbox->IsChecked()) ? WiimoteEmu::Nunchuk::BUTTON_Z : 0;
+		nunchuck.bt.hex = nunchuck.bt.hex ^ 0x3;
+		WiimoteEncrypt(&key, (u8*)&nunchuck, 0, sizeof(wm_nc));
 	}
 
 	if (extData && ext == 2)
