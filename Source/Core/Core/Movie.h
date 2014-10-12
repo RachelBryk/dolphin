@@ -177,10 +177,10 @@ std::string GetInputDisplay();
 
 // Done this way to avoid mixing of core and gui code
 typedef void(*GCManipFunction)(GCPadStatus*, int);
-typedef void(*WiiManipFunction)(u8*, WiimoteEmu::ReportFeatures, int);
+typedef void(*WiiManipFunction)(u8*, WiimoteEmu::ReportFeatures, int, int, struct wiimote_key);
 
 void SetGCInputManip(GCManipFunction);
 void SetWiiInputManip(WiiManipFunction);
 void CallGCInputManip(GCPadStatus* PadStatus, int controllerID);
-void CallWiiInputManip(u8* core, WiimoteEmu::ReportFeatures rptf, int controllerID);
+void CallWiiInputManip(u8* core, WiimoteEmu::ReportFeatures rptf, int controllerID, int ext, const struct wiimote_key key);
 }

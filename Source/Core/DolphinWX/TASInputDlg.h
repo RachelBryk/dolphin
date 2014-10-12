@@ -43,13 +43,13 @@ class TASInputDlg : public wxDialog
 		void OnRightClickSlider(wxMouseEvent& event);
 		void ResetValues();
 		void GetValues(GCPadStatus* PadStatus);
-		void GetValues(u8* data, WiimoteEmu::ReportFeatures rptf);
+		void GetValues(u8* data, WiimoteEmu::ReportFeatures rptf, int ext, const struct wiimote_key key);
 		void SetTurbo(wxMouseEvent& event);
 		void SetTurboFalse(wxMouseEvent& event);
 		void SetTurboState(wxCheckBox* CheckBox, bool* TurboOn);
 		void ButtonTurbo();
 		void GetKeyBoardInput(GCPadStatus* PadStatus);
-		void GetKeyBoardInput(u8* data, WiimoteEmu::ReportFeatures rptf);
+		void GetKeyBoardInput(u8* data, WiimoteEmu::ReportFeatures rptf, int ext, const struct wiimote_key key);
 		bool TextBoxHasFocus();
 		void SetLandRTriggers();
 		bool TASHasFocus();
@@ -94,7 +94,7 @@ class TASInputDlg : public wxDialog
 		void SetStickValue(bool* ActivatedByKeyboard, int* AmountPressed, wxTextCtrl* Textbox, int CurrentValue, int center = 128);
 		void SetButtonValue(Button* button, bool CurrentState);
 		void SetSliderValue(Control* control, int CurrentValue, int defaultValue = 128);
-		Stick CreateStick(int id_stick);
+		Stick CreateStick(int id_stick, int xRange = 255, int yRange = 255);
 		wxStaticBoxSizer* CreateStickLayout(Stick* tempStick, std::string title);
 		Button CreateButton(const std::string& name);
 		Control CreateControl(long style, int width, int height, u32 range = 255);

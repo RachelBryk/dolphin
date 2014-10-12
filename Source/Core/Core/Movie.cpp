@@ -748,11 +748,10 @@ void RecordInput(GCPadStatus* PadStatus, int controllerID)
 
 void CheckWiimoteStatus(int wiimote, u8 *data, const WiimoteEmu::ReportFeatures& rptf, int ext, const wiimote_key key)
 {
-	u8 size = rptf.size;
 	SetWiiInputDisplayString(wiimote, data, rptf, ext, key);
 
 	if (IsRecordingInput())
-		RecordWiimote(wiimote, data, size);
+		RecordWiimote(wiimote, data, rptf.size);
 }
 
 void RecordWiimote(int wiimote, u8 *data, u8 size)
@@ -1149,8 +1148,6 @@ bool PlayWiimote(int wiimote, u8 *data, const WiimoteEmu::ReportFeatures& rptf, 
 	memcpy(data, &(tmpInput[s_currentByte]), size);
 	s_currentByte += size;
 
-	SetWiiInputDisplayString(wiimote, data, rptf, ext, key);
-
 	g_currentInputCount++;
 
 	CheckInputEnd();
@@ -1260,10 +1257,10 @@ void CallGCInputManip(GCPadStatus* PadStatus, int controllerID)
 	if (gcmfunc)
 		(*gcmfunc)(PadStatus, controllerID);
 }
-void CallWiiInputManip(u8* data, WiimoteEmu::ReportFeatures rptf, int controllerID)
+void CallWiiInputManip(u8* data, WiimoteEmu::ReportFeatures rptf, int controllerID, int ext, const struct wiimote_key key)
 {
 	if (wiimfunc)
-		(*wiimfunc)(data, rptf, controllerID);
+		(*wiimfunc)(data, rptf, controllerID, ext, key);
 }
 
 void SetGraphicsConfig()

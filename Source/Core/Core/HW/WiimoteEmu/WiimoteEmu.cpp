@@ -730,7 +730,7 @@ void Wiimote::Update()
 			}
 		}
 
-		Movie::CallWiiInputManip(data, rptf, m_index);
+		Movie::CallWiiInputManip(data, rptf, m_index, m_extension->active_extension, m_ext_key);
 	}
 	if (NetPlay::IsNetPlayRunning())
 	{
@@ -738,10 +738,8 @@ void Wiimote::Update()
 		if (rptf.core)
 			m_status.buttons = *(wm_core*)(data + rptf.core);
 	}
-	if (!Movie::IsPlayingInput())
-	{
-		Movie::CheckWiimoteStatus(m_index, data, rptf, m_extension->active_extension, m_ext_key);
-	}
+	
+	Movie::CheckWiimoteStatus(m_index, data, rptf, m_extension->active_extension, m_ext_key);
 
 	// don't send a data report if auto reporting is off
 	if (false == m_reporting_auto && data[2] >= WM_REPORT_CORE)
