@@ -102,12 +102,12 @@ void TASInputDlg::CreateWiiLayout()
 	Controls[7] = &yCont;
 	Controls[8] = &zCont;
 
-	MainStick = CreateStick(ID_MAIN_STICK, 1024, 768);
+	MainStick = CreateStick(ID_MAIN_STICK, 1024, 768, true, false);
 	wxStaticBoxSizer* const main_stick = CreateStickLayout(&MainStick, "IR");
 	MainStick.xCont.defaultValue = 512;
 	MainStick.yCont.defaultValue = 384;
 
-	CStick = CreateStick(ID_C_STICK);
+	CStick = CreateStick(ID_C_STICK, 255, 255, false, true);
 	wxStaticBoxSizer* const nunchuck_stick = CreateStickLayout(&CStick, "Nunchuck stick");
 
 	wxStaticBoxSizer* const axisBox = new wxStaticBoxSizer(wxHORIZONTAL, this, _("Orientation"));
@@ -262,7 +262,7 @@ void TASInputDlg::CreateGCLayout()
 }
 
 
-TASInputDlg::Control TASInputDlg::CreateControl(long style, int width, int height, u32 range)
+TASInputDlg::Control TASInputDlg::CreateControl(long style, int width, int height, bool reverse, u32 range)
 {
 	Control tempCont;
 	tempCont.range = range;
@@ -274,18 +274,19 @@ TASInputDlg::Control TASInputDlg::CreateControl(long style, int width, int heigh
 	tempCont.Text_ID = eleID - 1;
 	tempCont.Text->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(TASInputDlg::UpdateFromText), nullptr, this);
 	tempCont.Slider_ID = eleID - 2;
+	tempCont.reverse = reverse;
 	return tempCont;
 }
 
-TASInputDlg::Stick TASInputDlg::CreateStick(int id_stick, int xRange, int yRange)
+TASInputDlg::Stick TASInputDlg::CreateStick(int id_stick, int xRange, int yRange, bool reverseX , bool reverseY)
 {
 	Stick tempStick;
 	tempStick.bitmap = new wxStaticBitmap(this, id_stick, CreateStickBitmap(128,128), wxDefaultPosition, wxDefaultSize);
 	tempStick.bitmap->Connect(wxEVT_MOTION, wxMouseEventHandler(TASInputDlg::OnMouseDownL), nullptr, this);
 	tempStick.bitmap->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(TASInputDlg::OnMouseDownL), nullptr, this);
 	tempStick.bitmap->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(TASInputDlg::OnMouseUpR), nullptr, this);
-	tempStick.xCont = CreateControl(wxSL_HORIZONTAL | (isWii ? wxSL_INVERSE : 0), 120, -1, xRange);
-	tempStick.yCont = CreateControl(wxSL_VERTICAL | (isWii ? 0 : wxSL_INVERSE), -1, 120, yRange);
+	tempStick.xCont = CreateControl(wxSL_HORIZONTAL | (reverseX ? wxSL_INVERSE : 0), 120, -1, reverseX, xRange);
+	tempStick.yCont = CreateControl(wxSL_VERTICAL | (reverseY ?  wxSL_INVERSE : 0), -1, 120, reverseY, yRange);
 	return tempStick;
 }
 
@@ -628,15 +629,24 @@ void TASInputDlg::UpdateFromText(wxCommandEvent& event)
 			Controls[i]->value = v;
 		}
 	}
-	if (!isWii)
-		CStick.bitmap->SetBitmap(CreateStickBitmap(CStick.xCont.value, 255 - CStick.yCont.value));
 
-	int x = (u8)((double)MainStick.xCont.value / (double)MainStick.xCont.range * 255.0);
-	int y = (u8)((double)MainStick.yCont.value / (double)MainStick.yCont.range * 255.0);
-	if (!isWii)
-		y = 255 - (u8)y;
-	else
+	int x = CStick.xCont.value;
+	int y = CStick.yCont.value;
+
+	if (CStick.xCont.reverse)
+		x = CStick.xCont.range - CStick.xCont.value;
+	if (CStick.yCont.reverse)
+		y = CStick.yCont.range - CStick.yCont.value;
+
+
+	CStick.bitmap->SetBitmap(CreateStickBitmap(x, y));
+
+	x = (u8)((double)MainStick.xCont.value / (double)MainStick.xCont.range * 255.0);
+	y = (u8)((double)MainStick.yCont.value / (double)MainStick.yCont.range * 255.0);
+	if (MainStick.xCont.reverse)
 		x = 255 - (u8)x;
+	if (MainStick.yCont.reverse)
+		y = 255 - (u8)y;
 	MainStick.bitmap->SetBitmap(CreateStickBitmap(x, y));
 }
 
@@ -680,16 +690,13 @@ void TASInputDlg::OnMouseUpR(wxMouseEvent& event)
 	if (stick == nullptr)
 		return;
 
-	u32 xCenter = stick->xCont.range / 2 + (stick->xCont.range % 2 == 0 ? 0 : 1);
-	u32 yCenter = stick->yCont.range / 2 + (stick->yCont.range % 2 == 0 ? 0 : 1);
-
-	stick->xCont.value = xCenter;
-	stick->yCont.value = yCenter;
+	stick->xCont.value = stick->xCont.defaultValue;
+	stick->yCont.value = stick->yCont.defaultValue;
 	stick->bitmap->SetBitmap(CreateStickBitmap(128,128));
-	stick->xCont.Text->SetValue(std::to_string(xCenter));
-	stick->yCont.Text->SetValue(std::to_string(yCenter));
-	stick->xCont.Slider->SetValue(xCenter);
-	stick->yCont.Slider->SetValue(yCenter);
+	stick->xCont.Text->SetValue(std::to_string(stick->xCont.defaultValue));
+	stick->yCont.Text->SetValue(std::to_string(stick->yCont.defaultValue));
+	stick->xCont.Slider->SetValue(stick->xCont.defaultValue);
+	stick->yCont.Slider->SetValue(stick->yCont.defaultValue);
 
 	event.Skip(true);
 }
@@ -729,9 +736,9 @@ void TASInputDlg::OnMouseDownL(wxMouseEvent& event)
 	if ((unsigned)stick->xCont.value > stick->xCont.range)
 		stick->xCont.value = stick->xCont.range;
 
-	if (!isWii)
-		stick->yCont.value = 255 - (u8)stick->yCont.value;
-	else
+	if (stick->yCont.reverse)
+		stick->yCont.value = stick->yCont.range - (u16)stick->yCont.value;
+	if (stick->xCont.reverse)
 		stick->xCont.value = stick->xCont.range - (u16)stick->xCont.value;
 
 	stick->xCont.value = (unsigned)stick->xCont.value > stick->xCont.range ? stick->xCont.range : stick->xCont.value;

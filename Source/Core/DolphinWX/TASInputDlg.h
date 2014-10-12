@@ -74,6 +74,7 @@ class TASInputDlg : public wxDialog
 			u32 range;
 			u32 defaultValue = 128;
 			bool SetByKeyboard = false;
+			bool reverse = false;
 		};
 
 		struct Button
@@ -94,10 +95,10 @@ class TASInputDlg : public wxDialog
 		void SetStickValue(bool* ActivatedByKeyboard, int* AmountPressed, wxTextCtrl* Textbox, int CurrentValue, int center = 128);
 		void SetButtonValue(Button* button, bool CurrentState);
 		void SetSliderValue(Control* control, int CurrentValue, int defaultValue = 128);
-		Stick CreateStick(int id_stick, int xRange = 255, int yRange = 255);
+		Stick CreateStick(int id_stick, int xRange = 255, int yRange = 255, bool reverseX = false, bool reverseY = false);
 		wxStaticBoxSizer* CreateStickLayout(Stick* tempStick, std::string title);
 		Button CreateButton(const std::string& name);
-		Control CreateControl(long style, int width, int height, u32 range = 255);
+		Control CreateControl(long style, int width, int height, bool reverse = false, u32 range = 255);
 
 		Control lCont, rCont, xCont, yCont, zCont;
 		Button A, B, X, Y, Z, L, R, C, START, PLUS, MINUS, ONE, TWO, HOME, dpad_up, dpad_down, dpad_left, dpad_right;
