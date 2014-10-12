@@ -37,18 +37,17 @@ TASInputDlg::TASInputDlg(wxWindow* parent, wxWindowID id, const wxString& title,
                          const wxPoint& position, const wxSize& size, long style)
 : wxDialog(parent, id, title, position, size, style)
 {
-	for (unsigned int i = 0; i < 11; ++i)
+	for (unsigned int i = 0; i < 10; ++i)
 		Controls[i] = nullptr;
 	for (unsigned int i = 0; i < 14; ++i)
 		Buttons[i] = nullptr;
 
-	Buttons[0] = &A;
-	Buttons[1] = &B;
-	Buttons[2] = &dpad_down;
-	Buttons[3] = &dpad_up;
-	Buttons[4] = &dpad_left;
-	Buttons[5] = &dpad_right;
-
+	Buttons[0] = &dpad_down;
+	Buttons[1] = &dpad_up;
+	Buttons[2] = &dpad_left;
+	Buttons[3] = &dpad_right;
+	Buttons[4] = &A;
+	Buttons[5] = &B;
 	Controls[0] = &MainStick.xCont;
 	Controls[1] = &MainStick.yCont;
 	Controls[2] = &CStick.xCont;
@@ -88,8 +87,6 @@ void TASInputDlg::CreateWiiLayout()
 {
 	if (hasLayout)
 		return;
-	isWii = true;
-	hasLayout = true;
 
 	Buttons[6] = &ONE;
 	Buttons[7] = &TWO;
@@ -102,60 +99,28 @@ void TASInputDlg::CreateWiiLayout()
 	Controls[4] = &xCont;
 	Controls[5] = &yCont;
 	Controls[6] = &zCont;
-
 	Controls[7] = &nxCont;
 	Controls[8] = &nyCont;
 	Controls[9] = &nzCont;
 
-	MainStick = CreateStick(ID_MAIN_STICK, 1024, 768, true, false);
+	MainStick = CreateStick(ID_MAIN_STICK, 1024, 768, 512, 384, true, false);
 	wxStaticBoxSizer* const main_stick = CreateStickLayout(&MainStick, "IR");
-	MainStick.xCont.defaultValue = 512;
-	MainStick.yCont.defaultValue = 384;
 
-	CStick = CreateStick(ID_C_STICK, 255, 255, false, true);
+	CStick = CreateStick(ID_C_STICK, 255, 255, 128, 128, false, true);
 	wxStaticBoxSizer* const nunchuck_stick = CreateStickLayout(&CStick, "Nunchuck stick");
 
-	wxStaticBoxSizer* const axisBox = new wxStaticBoxSizer(wxHORIZONTAL, this, _("Orientation"));
-	wxStaticBoxSizer* const xBox = new wxStaticBoxSizer(wxVERTICAL, this, _("X"));
-	wxStaticBoxSizer* const yBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Y"));
-	wxStaticBoxSizer* const zBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Z"));
 
 	xCont = CreateControl(wxSL_VERTICAL, -1, 100);
 	yCont = CreateControl(wxSL_VERTICAL, -1, 100);
-	zCont = CreateControl(wxSL_VERTICAL, -1, 100);
-	zCont.defaultValue = 154;
-	xBox->Add(xCont.Slider, 0, wxALIGN_CENTER_VERTICAL);
-	xBox->Add(xCont.Text, 0, wxALIGN_CENTER_VERTICAL);
-	yBox->Add(yCont.Slider, 0, wxALIGN_CENTER_VERTICAL);
-	yBox->Add(yCont.Text, 0, wxALIGN_CENTER_VERTICAL);
-	zBox->Add(zCont.Slider, 0, wxALIGN_CENTER_VERTICAL);
-	zBox->Add(zCont.Text, 0, wxALIGN_CENTER_VERTICAL);
-	axisBox->Add(xBox);
-	axisBox->Add(yBox);
-	axisBox->Add(zBox);
+	zCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 255, 154);
+	wxStaticBoxSizer* const axisBox = CreateAccellLayout(&xCont, &yCont, &zCont, "Orientation");
 
-	wxStaticBoxSizer* const nunchuckaxisBox = new wxStaticBoxSizer(wxHORIZONTAL, this, _("Nunchuck orientation"));
-	wxStaticBoxSizer* const nxBox = new wxStaticBoxSizer(wxVERTICAL, this, _("X"));
-	wxStaticBoxSizer* const nyBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Y"));
-	wxStaticBoxSizer* const nzBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Z"));
+	nxCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1024, 512);
+	nyCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1024, 512);
+	nzCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1024, 512);
+	wxStaticBoxSizer* const nunchuckaxisBox = CreateAccellLayout(&nxCont, &nyCont, &nzCont, "Nunchuck orientation");
 
-	nxCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1024);
-	nyCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1024);
-	nzCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1024);
-	nxCont.defaultValue = 512;
-	nyCont.defaultValue = 512;
-	nzCont.defaultValue = 512;
-	nxBox->Add(nxCont.Slider, 0, wxALIGN_CENTER_VERTICAL);
-	nxBox->Add(nxCont.Text, 0, wxALIGN_CENTER_VERTICAL);
-	nyBox->Add(nyCont.Slider, 0, wxALIGN_CENTER_VERTICAL);
-	nyBox->Add(nyCont.Text, 0, wxALIGN_CENTER_VERTICAL);
-	nzBox->Add(nzCont.Slider, 0, wxALIGN_CENTER_VERTICAL);
-	nzBox->Add(nzCont.Text, 0, wxALIGN_CENTER_VERTICAL);
-	nunchuckaxisBox->Add(nxBox);
-	nunchuckaxisBox->Add(nyBox);
-	nunchuckaxisBox->Add(nzBox);
-
-	for (unsigned int i = 0; i < 11; ++i)
+	for (unsigned int i = 0; i < 10; ++i)
 	{
 		if (Controls[i] != nullptr)
 			Controls[i]->Slider->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(TASInputDlg::OnRightClickSlider), nullptr, this);
@@ -172,15 +137,9 @@ void TASInputDlg::CreateWiiLayout()
 	TWO = CreateButton("2");
 	HOME = CreateButton("HOME");
 
-	buttons_grid->Add(A.Checkbox, false);
-	buttons_grid->Add(B.Checkbox, false);
-	buttons_grid->Add(C.Checkbox, false);
-	buttons_grid->Add(Z.Checkbox, false);
-	buttons_grid->Add(PLUS.Checkbox, false);
-	buttons_grid->Add(MINUS.Checkbox, false);
-	buttons_grid->Add(ONE.Checkbox, false);
-	buttons_grid->Add(TWO.Checkbox, false);
-	buttons_grid->Add(HOME.Checkbox, false);
+	for (unsigned int i = 4; i < 14; ++i)
+		if (Buttons[i] != nullptr)
+			buttons_grid->Add(Buttons[i]->Checkbox, false);
 	buttons_grid->AddSpacer(5);
 
 	buttons_box->Add(buttons_grid);
@@ -199,6 +158,7 @@ void TASInputDlg::CreateWiiLayout()
 	main_szr->Add(ext_szr);
 	SetSizerAndFit(main_szr);
 
+	hasLayout = true;
 	ResetValues();
 }
 
@@ -219,23 +179,21 @@ void TASInputDlg::CreateGCLayout()
 
 	wxBoxSizer* const top_box = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* const bottom_box = new wxBoxSizer(wxHORIZONTAL);
-	MainStick = CreateStick(ID_MAIN_STICK);
+	MainStick = CreateStick(ID_MAIN_STICK, 255, 255, 128, 128, false, true);
 	wxStaticBoxSizer* const main_box = CreateStickLayout(&MainStick, "Main Stick");
 
-	CStick = CreateStick(ID_C_STICK);
+	CStick = CreateStick(ID_C_STICK, 255, 255, 128, 128, false, true);
 	wxStaticBoxSizer* const c_box = CreateStickLayout(&CStick, "C Stick");
 
 	wxStaticBoxSizer* const shoulder_box = new wxStaticBoxSizer(wxHORIZONTAL, this, _("Shoulder Buttons"));
-	lCont = CreateControl(wxSL_VERTICAL | wxSL_INVERSE, -1, 100);
-	lCont.defaultValue = 0;
-	rCont = CreateControl(wxSL_VERTICAL | wxSL_INVERSE, -1, 100);
-	rCont.defaultValue = 0;
+	lCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 255, 0);
+	rCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 255, 0);
 	shoulder_box->Add(lCont.Slider, 0, wxALIGN_CENTER_VERTICAL);
 	shoulder_box->Add(lCont.Text, 0, wxALIGN_CENTER_VERTICAL);
 	shoulder_box->Add(rCont.Slider, 0, wxALIGN_CENTER_VERTICAL);
 	shoulder_box->Add(rCont.Text, 0, wxALIGN_CENTER_VERTICAL);
 
-	for (unsigned int i = 0; i < 11; ++i)
+	for (unsigned int i = 0; i < 10; ++i)
 	{
 		if (Controls[i] != nullptr)
 			Controls[i]->Slider->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(TASInputDlg::OnRightClickSlider), nullptr, this);
@@ -251,14 +209,9 @@ void TASInputDlg::CreateGCLayout()
 	Z = CreateButton("Z");
 	START = CreateButton("Start");
 
-	buttons_grid->Add(A.Checkbox, false);
-	buttons_grid->Add(B.Checkbox, false);
-	buttons_grid->Add(X.Checkbox, false);
-	buttons_grid->Add(Y.Checkbox, false);
-	buttons_grid->Add(L.Checkbox, false);
-	buttons_grid->Add(R.Checkbox, false);
-	buttons_grid->Add(Z.Checkbox, false);
-	buttons_grid->Add(START.Checkbox, false);
+	for (unsigned int i = 4; i < 14; ++i)
+		if (Buttons[i] != nullptr)
+			buttons_grid->Add(Buttons[i]->Checkbox, false);
 	buttons_grid->AddSpacer(5);
 
 	buttons_box->Add(buttons_grid);
@@ -279,20 +232,21 @@ void TASInputDlg::CreateGCLayout()
 	main_szr->Add(top_box);
 	main_szr->Add(bottom_box);
 	SetSizerAndFit(main_szr);
-	ResetValues();
 
 	hasLayout = true;
+	ResetValues();
 }
 
 
-TASInputDlg::Control TASInputDlg::CreateControl(long style, int width, int height, bool reverse, u32 range)
+TASInputDlg::Control TASInputDlg::CreateControl(long style, int width, int height, bool reverse, u32 range, u32 defaultValue)
 {
 	Control tempCont;
 	tempCont.range = range;
-	tempCont.Slider = new wxSlider(this, eleID++, range/2+1, 0, range, wxDefaultPosition, wxDefaultSize, style);
+	tempCont.defaultValue = defaultValue;
+	tempCont.Slider = new wxSlider(this, eleID++, defaultValue, 0, range, wxDefaultPosition, wxDefaultSize, style);
 	tempCont.Slider->SetMinSize(wxSize(width, height));
 	tempCont.Slider->Connect(wxEVT_SLIDER, wxCommandEventHandler(TASInputDlg::UpdateFromSliders), nullptr, this);
-	tempCont.Text = new wxTextCtrl(this, eleID++, std::to_string(range/2+1), wxDefaultPosition, wxSize(40, 20));
+	tempCont.Text = new wxTextCtrl(this, eleID++, std::to_string(defaultValue), wxDefaultPosition, wxSize(40, 20));
 	tempCont.Text->SetMaxLength(range > 999 ? 4 : 3);
 	tempCont.Text_ID = eleID - 1;
 	tempCont.Text->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(TASInputDlg::UpdateFromText), nullptr, this);
@@ -301,15 +255,15 @@ TASInputDlg::Control TASInputDlg::CreateControl(long style, int width, int heigh
 	return tempCont;
 }
 
-TASInputDlg::Stick TASInputDlg::CreateStick(int id_stick, int xRange, int yRange, bool reverseX , bool reverseY)
+TASInputDlg::Stick TASInputDlg::CreateStick(int id_stick, int xRange, int yRange, u32 defaultX, u32 defaultY, bool reverseX, bool reverseY)
 {
 	Stick tempStick;
 	tempStick.bitmap = new wxStaticBitmap(this, id_stick, CreateStickBitmap(128,128), wxDefaultPosition, wxDefaultSize);
 	tempStick.bitmap->Connect(wxEVT_MOTION, wxMouseEventHandler(TASInputDlg::OnMouseDownL), nullptr, this);
 	tempStick.bitmap->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(TASInputDlg::OnMouseDownL), nullptr, this);
 	tempStick.bitmap->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(TASInputDlg::OnMouseUpR), nullptr, this);
-	tempStick.xCont = CreateControl(wxSL_HORIZONTAL | (reverseX ? wxSL_INVERSE : 0), 120, -1, reverseX, xRange);
-	tempStick.yCont = CreateControl(wxSL_VERTICAL | (reverseY ?  wxSL_INVERSE : 0), -1, 120, reverseY, yRange);
+	tempStick.xCont = CreateControl(wxSL_HORIZONTAL | (reverseX ? wxSL_INVERSE : 0), 120, -1, reverseX, xRange, defaultX);
+	tempStick.yCont = CreateControl(wxSL_VERTICAL | (reverseY ?  wxSL_INVERSE : 0), -1, 120, reverseY, yRange, defaultY);
 	return tempStick;
 }
 
@@ -328,6 +282,25 @@ wxStaticBoxSizer* TASInputDlg::CreateStickLayout(Stick* tempStick, std::string t
 	temp_yslider_box->Add(tempStick->yCont.Slider, 0, wxALIGN_CENTER_VERTICAL);
 	temp_yslider_box->Add(tempStick->yCont.Text, 0, wxALIGN_CENTER_VERTICAL);
 	temp_box->Add(temp_yslider_box);
+	return temp_box;
+}
+
+wxStaticBoxSizer* TASInputDlg::CreateAccellLayout(Control* x, Control* y, Control* z, std::string title)
+{
+	wxStaticBoxSizer* const temp_box = new wxStaticBoxSizer(wxHORIZONTAL, this, _(title));
+	wxStaticBoxSizer* const xBox = new wxStaticBoxSizer(wxVERTICAL, this, _("X"));
+	wxStaticBoxSizer* const yBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Y"));
+	wxStaticBoxSizer* const zBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Z"));
+
+	xBox->Add(x->Slider, 0, wxALIGN_CENTER_VERTICAL);
+	xBox->Add(x->Text, 0, wxALIGN_CENTER_VERTICAL);
+	yBox->Add(y->Slider, 0, wxALIGN_CENTER_VERTICAL);
+	yBox->Add(y->Text, 0, wxALIGN_CENTER_VERTICAL);
+	zBox->Add(z->Slider, 0, wxALIGN_CENTER_VERTICAL);
+	zBox->Add(z->Text, 0, wxALIGN_CENTER_VERTICAL);
+	temp_box->Add(xBox);
+	temp_box->Add(yBox);
+	temp_box->Add(zBox);
 	return temp_box;
 }
 
@@ -353,7 +326,7 @@ void TASInputDlg::ResetValues()
 			Buttons[i]->Checkbox->SetValue(false);
 	}
 
-	for (unsigned int i = 0; i < 11; ++i)
+	for (unsigned int i = 0; i < 10; ++i)
 	{
 		if (Controls[i] != nullptr)
 		{
@@ -412,7 +385,7 @@ void TASInputDlg::SetButtonValue(Button* button, bool CurrentState)
 
 void TASInputDlg::SetWiiButtons(wm_core* butt)
 {
-	for (unsigned int i = 0; i < 11; ++i)
+	for (unsigned int i = 0; i < 10; ++i)
 	{
 		if (Buttons[i] != nullptr)
 			*butt |= (Buttons[i]->Checkbox->IsChecked()) ? WiiButtonsBitmask[i] : 0;
@@ -446,7 +419,7 @@ void TASInputDlg::GetKeyBoardInput(u8* data, WiimoteEmu::ReportFeatures rptf, in
 
 	if (coreData)
 	{
-		for (unsigned int i = 0; i < 11; ++i)
+		for (unsigned int i = 0; i < 10; ++i)
 		{
 			if (Buttons[i] != nullptr)
 				SetButtonValue(Buttons[i], (*(wm_core*)coreData & WiiButtonsBitmask[i]) != 0);
@@ -484,8 +457,6 @@ void TASInputDlg::GetKeyBoardInput(u8* data, WiimoteEmu::ReportFeatures rptf, in
 void TASInputDlg::GetValues(u8* data, WiimoteEmu::ReportFeatures rptf, int ext, const struct wiimote_key key)
 {
 	if (!IsShown())
-		return;
-	if (!isWii)
 		return;
 
 	GetKeyBoardInput(data, rptf, ext, key);
@@ -603,8 +574,6 @@ void TASInputDlg::GetValues(GCPadStatus* PadStatus)
 {
 	if (!IsShown())
 		return;
-	if (isWii)
-		return;
 
 	//TODO:: Make this instant not when polled.
 	GetKeyBoardInput(PadStatus);
@@ -644,7 +613,7 @@ void TASInputDlg::UpdateFromSliders(wxCommandEvent& event)
 {
 	wxTextCtrl* text;
 
-	for (unsigned int i = 0; i < 11; ++i)
+	for (unsigned int i = 0; i < 10; ++i)
 	{
 		if (Controls[i] != nullptr && event.GetId() == Controls[i]->Slider_ID)
 			text = Controls[i]->Text;
@@ -661,7 +630,7 @@ void TASInputDlg::UpdateFromText(wxCommandEvent& event)
 	if (!((wxTextCtrl*) event.GetEventObject())->GetValue().ToULong(&value))
 		return;
 
-	for (unsigned int i = 0; i < 11; ++i)
+	for (unsigned int i = 0; i < 10; ++i)
 	{
 		if (Controls[i] != nullptr && event.GetId() == Controls[i]->Text_ID)
 		{
@@ -706,7 +675,7 @@ bool TASInputDlg::TASHasFocus()
 	if (!hasLayout)
 		return false;
 	//allows numbers to be used as hotkeys
-	for (unsigned int i = 0; i < 11; ++i)
+	for (unsigned int i = 0; i < 10; ++i)
 	{
 		if (Controls[i] != nullptr && wxWindow::FindFocus() == Controls[i]->Text)
 			return false;
@@ -744,7 +713,7 @@ void TASInputDlg::OnMouseUpR(wxMouseEvent& event)
 
 void TASInputDlg::OnRightClickSlider(wxMouseEvent& event)
 {
-	for (unsigned int i = 0; i < 11; ++i)
+	for (unsigned int i = 0; i < 10; ++i)
 	{
 		if (Controls[i] != nullptr && event.GetId() == Controls[i]->Slider_ID)
 		{
