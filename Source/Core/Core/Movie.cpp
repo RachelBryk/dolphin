@@ -645,7 +645,7 @@ static void SetWiiInputDisplayString(int remoteID, u8* const data, const Wiimote
 		WiimoteDecrypt(&key, (u8*)&nunchuck, 0, sizeof(wm_extension));
 		nunchuck.bt = nunchuck.bt ^ 0xFF;
 
-		std::string accel = StringFromFormat(" N-ACC:%d,%d,%d", nunchuck.ax, nunchuck.ay, nunchuck.az);
+		std::string accel = StringFromFormat(" N-ACC:%d,%d,%d", (nunchuck.ax << 2) | nunchuck.axlow, (nunchuck.ay << 2) | nunchuck.aylow, (nunchuck.az << 2) | nunchuck.azlow);
 
 		if (nunchuck.bt & WiimoteEmu::Nunchuk::BUTTON_C)
 			s_InputDisplay[controllerID].append(" C");

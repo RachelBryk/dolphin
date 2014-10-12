@@ -37,19 +37,22 @@ TASInputDlg::TASInputDlg(wxWindow* parent, wxWindowID id, const wxString& title,
                          const wxPoint& position, const wxSize& size, long style)
 : wxDialog(parent, id, title, position, size, style)
 {
+	for (unsigned int i = 0; i < 11; ++i)
+		Controls[i] = nullptr;
+	for (unsigned int i = 0; i < 14; ++i)
+		Buttons[i] = nullptr;
+
 	Buttons[0] = &A;
 	Buttons[1] = &B;
 	Buttons[2] = &dpad_down;
 	Buttons[3] = &dpad_up;
 	Buttons[4] = &dpad_left;
 	Buttons[5] = &dpad_right;
-	Buttons[13] = nullptr;
 
 	Controls[0] = &MainStick.xCont;
 	Controls[1] = &MainStick.yCont;
-	Controls[4] = &CStick.xCont;
-	Controls[5] = &CStick.yCont;
-	Controls[9] = nullptr;
+	Controls[2] = &CStick.xCont;
+	Controls[3] = &CStick.yCont;
 
 	A = CreateButton("A");
 	B = CreateButton("B");
@@ -96,11 +99,13 @@ void TASInputDlg::CreateWiiLayout()
 	Buttons[11] = &C;
 	Buttons[12] = &Z;
 
-	Controls[2] = nullptr;
-	Controls[3] = nullptr;
-	Controls[6] = &xCont;
-	Controls[7] = &yCont;
-	Controls[8] = &zCont;
+	Controls[4] = &xCont;
+	Controls[5] = &yCont;
+	Controls[6] = &zCont;
+
+	Controls[7] = &nxCont;
+	Controls[8] = &nyCont;
+	Controls[9] = &nzCont;
 
 	MainStick = CreateStick(ID_MAIN_STICK, 1024, 768, true, false);
 	wxStaticBoxSizer* const main_stick = CreateStickLayout(&MainStick, "IR");
@@ -129,7 +134,28 @@ void TASInputDlg::CreateWiiLayout()
 	axisBox->Add(yBox);
 	axisBox->Add(zBox);
 
-	for (unsigned int i = 0; i < 10; ++i)
+	wxStaticBoxSizer* const nunchuckaxisBox = new wxStaticBoxSizer(wxHORIZONTAL, this, _("Nunchuck orientation"));
+	wxStaticBoxSizer* const nxBox = new wxStaticBoxSizer(wxVERTICAL, this, _("X"));
+	wxStaticBoxSizer* const nyBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Y"));
+	wxStaticBoxSizer* const nzBox = new wxStaticBoxSizer(wxVERTICAL, this, _("Z"));
+
+	nxCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1024);
+	nyCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1024);
+	nzCont = CreateControl(wxSL_VERTICAL, -1, 100, false, 1024);
+	nxCont.defaultValue = 512;
+	nyCont.defaultValue = 512;
+	nzCont.defaultValue = 512;
+	nxBox->Add(nxCont.Slider, 0, wxALIGN_CENTER_VERTICAL);
+	nxBox->Add(nxCont.Text, 0, wxALIGN_CENTER_VERTICAL);
+	nyBox->Add(nyCont.Slider, 0, wxALIGN_CENTER_VERTICAL);
+	nyBox->Add(nyCont.Text, 0, wxALIGN_CENTER_VERTICAL);
+	nzBox->Add(nzCont.Slider, 0, wxALIGN_CENTER_VERTICAL);
+	nzBox->Add(nzCont.Text, 0, wxALIGN_CENTER_VERTICAL);
+	nunchuckaxisBox->Add(nxBox);
+	nunchuckaxisBox->Add(nyBox);
+	nunchuckaxisBox->Add(nzBox);
+
+	for (unsigned int i = 0; i < 11; ++i)
 	{
 		if (Controls[i] != nullptr)
 			Controls[i]->Slider->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(TASInputDlg::OnRightClickSlider), nullptr, this);
@@ -164,6 +190,7 @@ void TASInputDlg::CreateWiiLayout()
 	wxBoxSizer* const wiimote_szr = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* const ext_szr = new wxBoxSizer(wxHORIZONTAL);
 	ext_szr->Add(nunchuck_stick);
+	ext_szr->Add(nunchuckaxisBox);
 
 	wiimote_szr->Add(main_stick);
 	wiimote_szr->Add(axisBox);
@@ -186,13 +213,9 @@ void TASInputDlg::CreateGCLayout()
 	Buttons[9] = &L;
 	Buttons[10] = &R;
 	Buttons[11] = &START;
-	Buttons[12] = nullptr;
 
-	Controls[2] = &lCont;
-	Controls[3] = &rCont;
-	Controls[6] = nullptr;
-	Controls[7] = nullptr;
-	Controls[8] = nullptr;
+	Controls[4] = &lCont;
+	Controls[5] = &rCont;
 
 	wxBoxSizer* const top_box = new wxBoxSizer(wxHORIZONTAL);
 	wxBoxSizer* const bottom_box = new wxBoxSizer(wxHORIZONTAL);
@@ -212,7 +235,7 @@ void TASInputDlg::CreateGCLayout()
 	shoulder_box->Add(rCont.Slider, 0, wxALIGN_CENTER_VERTICAL);
 	shoulder_box->Add(rCont.Text, 0, wxALIGN_CENTER_VERTICAL);
 
-	for (unsigned int i = 0; i < 10; ++i)
+	for (unsigned int i = 0; i < 11; ++i)
 	{
 		if (Controls[i] != nullptr)
 			Controls[i]->Slider->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(TASInputDlg::OnRightClickSlider), nullptr, this);
@@ -330,7 +353,7 @@ void TASInputDlg::ResetValues()
 			Buttons[i]->Checkbox->SetValue(false);
 	}
 
-	for (unsigned int i = 0; i < 10; ++i)
+	for (unsigned int i = 0; i < 11; ++i)
 	{
 		if (Controls[i] != nullptr)
 		{
@@ -551,10 +574,28 @@ void TASInputDlg::GetValues(u8* data, WiimoteEmu::ReportFeatures rptf, int ext, 
 		nunchuck.jx = CStick.xCont.value;
 		nunchuck.jy = CStick.yCont.value;
 
+		nunchuck.ax    = nxCont.value >> 2;
+		nunchuck.axlow = nxCont.value & 0x3;
+		nunchuck.ay    = nyCont.value >> 2;
+		nunchuck.aylow = nyCont.value & 0x3;
+		nunchuck.az    = nzCont.value >> 2;
+		nunchuck.azlow = nzCont.value & 0x3;
+
 		nunchuck.bt |= (Buttons[11]->Checkbox->IsChecked()) ? WiimoteEmu::Nunchuk::BUTTON_C : 0;
 		nunchuck.bt |= (Buttons[12]->Checkbox->IsChecked()) ? WiimoteEmu::Nunchuk::BUTTON_Z : 0;
 		nunchuck.bt = nunchuck.bt ^ 0xFF;
 		WiimoteEncrypt(&key, (u8*)&nunchuck, 0, sizeof(wm_extension));
+	}
+
+	if (extData && ext == 2)
+	{
+		// TODO
+		wm_classic_extension& cc = *(wm_classic_extension*)extData;
+		WiimoteDecrypt(&key, (u8*)&cc, 0, sizeof(wm_classic_extension));
+
+
+
+		WiimoteEncrypt(&key, (u8*)&cc, 0, sizeof(wm_classic_extension));
 	}
 }
 
@@ -603,7 +644,7 @@ void TASInputDlg::UpdateFromSliders(wxCommandEvent& event)
 {
 	wxTextCtrl* text;
 
-	for (unsigned int i = 0; i < 10; ++i)
+	for (unsigned int i = 0; i < 11; ++i)
 	{
 		if (Controls[i] != nullptr && event.GetId() == Controls[i]->Slider_ID)
 			text = Controls[i]->Text;
@@ -620,7 +661,7 @@ void TASInputDlg::UpdateFromText(wxCommandEvent& event)
 	if (!((wxTextCtrl*) event.GetEventObject())->GetValue().ToULong(&value))
 		return;
 
-	for (unsigned int i = 0; i < 10; ++i)
+	for (unsigned int i = 0; i < 11; ++i)
 	{
 		if (Controls[i] != nullptr && event.GetId() == Controls[i]->Text_ID)
 		{
@@ -665,7 +706,7 @@ bool TASInputDlg::TASHasFocus()
 	if (!hasLayout)
 		return false;
 	//allows numbers to be used as hotkeys
-	for (unsigned int i = 0; i < 10; ++i)
+	for (unsigned int i = 0; i < 11; ++i)
 	{
 		if (Controls[i] != nullptr && wxWindow::FindFocus() == Controls[i]->Text)
 			return false;
@@ -703,7 +744,7 @@ void TASInputDlg::OnMouseUpR(wxMouseEvent& event)
 
 void TASInputDlg::OnRightClickSlider(wxMouseEvent& event)
 {
-	for (unsigned int i = 0; i < 10; ++i)
+	for (unsigned int i = 0; i < 11; ++i)
 	{
 		if (Controls[i] != nullptr && event.GetId() == Controls[i]->Slider_ID)
 		{

@@ -100,12 +100,12 @@ class TASInputDlg : public wxDialog
 		Button CreateButton(const std::string& name);
 		Control CreateControl(long style, int width, int height, bool reverse = false, u32 range = 255);
 
-		Control lCont, rCont, xCont, yCont, zCont;
+		Control lCont, rCont, xCont, yCont, zCont, nxCont, nyCont, nzCont;
 		Button A, B, X, Y, Z, L, R, C, START, PLUS, MINUS, ONE, TWO, HOME, dpad_up, dpad_down, dpad_left, dpad_right;
 		Stick MainStick, CStick;
 
 		Button* Buttons[14];
-		Control* Controls[10];
+		Control* Controls[11];
 		static const int GCPadButtonsBitmask[12];
 		static const int WiiButtonsBitmask[13];
 

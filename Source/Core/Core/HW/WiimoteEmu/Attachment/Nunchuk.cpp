@@ -107,7 +107,9 @@ void Nunchuk::GetState(u8* const data)
 	// shake
 	EmulateShake(&accel, m_shake, m_shake_step);
 	// buttons
-	m_buttons->GetState(&ncdata->bt, nunchuk_button_bitmasks);
+	u8 buttons = 0;
+	m_buttons->GetState(&buttons, nunchuk_button_bitmasks);
+	ncdata->bt = buttons;
 
 	// flip the button bits :/
 	ncdata->bt ^= 0x03;

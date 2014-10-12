@@ -69,19 +69,22 @@ struct wm_extension
 	u8 ax; // accelerometer
 	u8 ay;
 	u8 az;
-	u8 bt; // buttons
+	u8 azlow : 2;
+	u8 aylow : 2;
+	u8 axlow : 2;
+	u8 bt : 2; // buttons
 };
 
 struct wm_classic_extension
 {
-	u8 lx : 6; // byte 0
+	u8 lx  : 6; // byte 0
 	u8 rx3 : 2;
-	u8 ly : 6; // byte 1
+	u8 ly  : 6; // byte 1
 	u8 rx2 : 2;
-	u8 ry : 5; // byte 2
+	u8 ry  : 5; // byte 2
 	u8 lt2 : 2;
 	u8 rx1 : 1;
-	u8 rt : 5; // byte 3
+	u8 rt  : 5; // byte 3
 	u8 lt1 : 3;
 	u16 bt; // byte 4, 5
 };
