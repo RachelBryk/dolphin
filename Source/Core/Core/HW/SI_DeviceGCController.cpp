@@ -4,6 +4,7 @@
 
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
+#include "Core/LuaInterface.h"
 #include "Core/Movie.h"
 #include "Core/HW/EXI_Device.h"
 #include "Core/HW/EXI_DeviceMic.h"
@@ -127,7 +128,11 @@ bool CSIDevice_GCController::GetData(u32& _Hi, u32& _Low)
 		Movie::PlayController(&PadStatus, ISIDevice::m_iDeviceNumber);
 		Movie::InputUpdate();
 	}
-	else if (Movie::IsRecordingInput())
+	else
+	{
+		Lua::getJoy(&PadStatus);
+	}
+	if (Movie::IsRecordingInput())
 	{
 		Movie::RecordInput(&PadStatus, ISIDevice::m_iDeviceNumber);
 		Movie::InputUpdate();
