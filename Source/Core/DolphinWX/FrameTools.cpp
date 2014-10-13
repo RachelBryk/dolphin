@@ -72,6 +72,7 @@
 #include "DolphinWX/InputConfigDiag.h"
 #include "DolphinWX/ISOFile.h"
 #include "DolphinWX/LogWindow.h"
+#include "LuaWindow.h"
 #include "DolphinWX/MemcardManager.h"
 #include "DolphinWX/NetWindow.h"
 #include "DolphinWX/TASInputDlg.h"
@@ -243,6 +244,7 @@ wxMenuBar* CFrame::CreateMenu()
 
 	// Tools menu
 	wxMenu* toolsMenu = new wxMenu;
+	toolsMenu->Append(IDM_LUA, _("New &Lua Console"));
 	toolsMenu->Append(IDM_MEMCARD, _("&Memcard Manager (GC)"));
 	toolsMenu->Append(IDM_IMPORTSAVE, _("Import Wii Save"));
 	toolsMenu->Append(IDM_EXPORTALLSAVE, _("Export All Wii Saves"));
@@ -1290,6 +1292,8 @@ void CFrame::OnConfigDSP(wxCommandEvent& WXUNUSED (event))
 		m_GameListCtrl->Update();
 }
 
+
+
 void CFrame::OnConfigPAD(wxCommandEvent& WXUNUSED (event))
 {
 	InputConfig* const pad_plugin = Pad::GetConfig();
@@ -1438,6 +1442,11 @@ void CFrame::OnImportSave(wxCommandEvent& WXUNUSED (event))
 	{
 		CWiiSaveCrypted::ImportWiiSave(WxStrToStr(path));
 	}
+}
+
+void CFrame::OnOpenLuaWindow(wxCommandEvent& WXUNUSED (event))
+{
+	new wxLuaWindow(this, wxDefaultPosition, wxSize(600, 390));
 }
 
 void CFrame::OnShow_CheatsWindow(wxCommandEvent& WXUNUSED (event))
