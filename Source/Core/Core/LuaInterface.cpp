@@ -1955,6 +1955,25 @@ DEFINE_LUA_FUNCTION(joy_joystick, "joyx,joyy")
 	return 0;
 }
 
+static const struct ButtonDesc
+{
+	unsigned short bit;
+	const char* name;
+}
+s_buttonDescs [] =
+{
+	{PAD_BUTTON_UP, "up"},
+	{PAD_BUTTON_DOWN, "down"},
+	{PAD_BUTTON_LEFT, "left"},
+	{PAD_BUTTON_RIGHT, "right"},
+	{PAD_BUTTON_A, "A"},
+	{PAD_BUTTON_B, "B"},
+	{PAD_BUTTON_START, "start"},
+	{PAD_BUTTON_X, "X"},
+	{PAD_BUTTON_Y, "Y"},
+	{PAD_TRIGGER_Z, "Z"},
+};
+
 DEFINE_LUA_FUNCTION(joy_set, "inputtable")
 {
 	int index = 1;
@@ -1978,25 +1997,6 @@ DEFINE_LUA_FUNCTION(joy_set, "inputtable")
 
 	return 0;
 }
-
-static const struct ButtonDesc
-{
-	unsigned short bit;
-	const char* name;
-}
-s_buttonDescs [] =
-{
-	{PAD_BUTTON_UP, "up"},
-	{PAD_BUTTON_DOWN, "down"},
-	{PAD_BUTTON_LEFT, "left"},
-	{PAD_BUTTON_RIGHT, "right"},
-	{PAD_BUTTON_A, "A"},
-	{PAD_BUTTON_B, "B"},
-	{PAD_BUTTON_START, "start"},
-	{PAD_BUTTON_X, "X"},
-	{PAD_BUTTON_Y, "Y"},
-	{PAD_TRIGGER_Z, "Z"},
-};
 
 
 // TODO: Convert to Dolphin?
