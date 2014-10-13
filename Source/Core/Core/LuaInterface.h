@@ -95,6 +95,6 @@ void RestartAllLuaScripts();
 void EnableStopAllLuaScripts(bool enable);
 void DontWorryLua();
 
-void getJoy(GCPadStatus* pad);
+void GetInput(GCPadStatus* pad);
 
 };

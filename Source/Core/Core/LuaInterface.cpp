@@ -24,6 +24,7 @@
 #include "DSPEmulator.h"
 #include "VideoCommon/VideoBackendBase.h"
 #include "Core/HW/GCPad.h"
+#include "InputCommon/GCPadStatus.h"
 
 extern "C" {
 #include "Lua/lua.h"
@@ -39,9 +40,11 @@ namespace Lua {
 //please work
 int joystickx = 128;
 int joysticky = 128;
+u16 buttons = 0;
 bool setJoystick = false;
+
 //please work
-void getJoy(GCPadStatus* pad)
+void GetInput(GCPadStatus* pad)
 {
 	if (setJoystick)
 	{
@@ -49,12 +52,18 @@ void getJoy(GCPadStatus* pad)
 		pad->stickY = joysticky;
 		setJoystick = false;
 	}
+	pad->button |= buttons;
+	buttons = 0;
 }
 void setJoy(int x, int y)
 {
 	joystickx = x;
 	joysticky = y;
 	setJoystick = true;
+}
+void SetButtons(u16 input)
+{
+	buttons = input;
 }
 
 
@@ -1946,57 +1955,52 @@ DEFINE_LUA_FUNCTION(joy_joystick, "joyx,joyy")
 	return 0;
 }
 
-// TODO: Convert to Dolphin?
-/*
+DEFINE_LUA_FUNCTION(joy_set, "inputtable")
+{
+	int index = 1;
+
+	luaL_checktype(L, index, LUA_TTABLE);
+
+	u16 input = 0;
+
+	for(int i = 0; i < sizeof(s_buttonDescs)/sizeof(*s_buttonDescs); i++)
+	{
+		const ButtonDesc& bd = s_buttonDescs[i];
+		lua_getfield(L, index, bd.name);
+		if (!lua_isnil(L,-1))
+		{
+			input |= bd.bit;
+		}
+		lua_pop(L,1);
+	}
+
+	SetButtons(input);
+
+	return 0;
+}
+
 static const struct ButtonDesc
 {
-	unsigned short controllerNum;
 	unsigned short bit;
 	const char* name;
 }
 s_buttonDescs [] =
 {
-	{1, 0, "up"},
-	{1, 1, "down"},
-	{1, 2, "left"},
-	{1, 3, "right"},
-	{1, 4, "A"},
-	{1, 5, "B"},
-	{1, 6, "C"},
-	{1, 7, "start"},
-	{1, 32, "X"},
-	{1, 33, "Y"},
-	{1, 34, "Z"},
-	{1, 35, "mode"},
-	{2, 24, "up"},
-	{2, 25, "down"},
-	{2, 26, "left"},
-	{2, 27, "right"},
-	{2, 28, "A"},
-	{2, 29, "B"},
-	{2, 30, "C"},
-	{2, 31, "start"},
-	{2, 36, "X"},
-	{2, 37, "Y"},
-	{2, 38, "Z"},
-	{2, 39, "mode"},
-	{0x1B, 8, "up"},
-	{0x1B, 9, "down"},
-	{0x1B, 10, "left"},
-	{0x1B, 11, "right"},
-	{0x1B, 12, "A"},
-	{0x1B, 13, "B"},
-	{0x1B, 14, "C"},
-	{0x1B, 15, "start"},
-	{0x1C, 16, "up"},
-	{0x1C, 17, "down"},
-	{0x1C, 18, "left"},
-	{0x1C, 19, "right"},
-	{0x1C, 20, "A"},
-	{0x1C, 21, "B"},
-	{0x1C, 22, "C"},
-	{0x1C, 23, "start"},
+	{PAD_BUTTON_UP, "up"},
+	{PAD_BUTTON_DOWN, "down"},
+	{PAD_BUTTON_LEFT, "left"},
+	{PAD_BUTTON_RIGHT, "right"},
+	{PAD_BUTTON_A, "A"},
+	{PAD_BUTTON_B, "B"},
+	{PAD_BUTTON_START, "start"},
+	{PAD_BUTTON_X, "X"},
+	{PAD_BUTTON_Y, "Y"},
+	{PAD_TRIGGER_Z, "Z"},
 };
+
+
+// TODO: Convert to Dolphin?
+/*
 
 int joy_getArgControllerNum(lua_State* L, int& index)
 {
