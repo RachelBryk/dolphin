@@ -3446,14 +3446,14 @@ void registerLibs(lua_State* L)
 	luaL_openlibs(L);
 
 	luaL_register(L, "emu", emulualib); // added for better cross-emulator compatibility
-	luaL_register(L, "emulua", emulualib); // kept for backward compatibility
-	luaL_register(L, "gui", guilib);
+	//luaL_register(L, "emulua", emulualib); // kept for backward compatibility
+	//luaL_register(L, "gui", guilib);
 	luaL_register(L, "savestate", statelib);
 	luaL_register(L, "memory", memorylib);
 	luaL_register(L, "joypad", joylib); // for game input
 	luaL_register(L, "input", inputlib); // for user input
 	luaL_register(L, "movie", movielib);
-	luaL_register(L, "sound", soundlib);
+	//luaL_register(L, "sound", soundlib);
 	lua_settop(L, 0); // clean the stack, because each call to luaL_register leaves a table on top
 	
 	// register a few utility functions outside of libraries (in the global namespace)
