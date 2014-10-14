@@ -1252,134 +1252,6 @@ static bool FailVerifyAtFrameBoundary(lua_State* L, const char* funcName, int un
 	return false;
 }
 
-// TODO
-#if 0
-
-#if defined(DEBUG) || defined(DEBUGFAST)
-static bool Debug = true;
-#else
-static bool Debug = false;
-#endif
-
-// acts similar to normal emulation update
-// except without the user being able to activate emulator commands
-DEFINE_LUA_FUNCTION(emulua_emulateframe, "")
-{
-	if(FailVerifyAtFrameBoundary(L, "emu.emulateframe", 0,1))
-		return 0;
-	
-	Update_Emulation_One((HWND)Core::g_CoreStartupParameter.hMainWindow);
-	Prevent_Next_Frame_Skipping(); // so we don't skip a whole bunch of frames immediately after emulating many frames by this method
-
-	worry(L,300);
-	return 0;
-}
-
-// acts as a fast-forward emulation update that still renders every frame
-// and the user is unable to activate emulator commands during it
-DEFINE_LUA_FUNCTION(emulua_emulateframefastnoskipping, "")
-{
-	if(FailVerifyAtFrameBoundary(L, "emu.emulateframefastnoskipping", 0,1))
-		return 0;
-
-	Update_Emulation_One_Before((HWND)Core::g_CoreStartupParameter.hMainWindow);
-	Update_Frame_Hook();
-	Update_Emulation_After_Controlled((HWND)Core::g_CoreStartupParameter.hMainWindow, true);
-	Prevent_Next_Frame_Skipping(); // so we don't skip a whole bunch of frames immediately after a bout of fast-forward frames
-
-	worry(L,200);
-	return 0;
-}
-
-// acts as a (very) fast-forward emulation update
-// where the user is unable to activate emulator commands
-DEFINE_LUA_FUNCTION(emulua_emulateframefast, "")
-{
-	if(FailVerifyAtFrameBoundary(L, "emu.emulateframefast", 0,1))
-		return 0;
-
-	disableVideoLatencyCompensationCount = VideoLatencyCompensation + 1;
-
-	Update_Emulation_One_Before((HWND)Core::g_CoreStartupParameter.hMainWindow);
-
-	if(FrameCount%16 == 0) // skip rendering 15 out of 16 frames
-	{
-		// update once and render
-		Update_Frame_Hook();
-		Update_Emulation_After_Controlled((HWND)Core::g_CoreStartupParameter.hMainWindow, true);
-	}
-	else
-	{
-		// update once but skip rendering
-		Update_Frame_Fast_Hook();
-		Update_Emulation_After_Controlled((HWND)Core::g_CoreStartupParameter.hMainWindow, false);
-	}
-
-	Prevent_Next_Frame_Skipping(); // so we don't skip a whole bunch of frames immediately AFTER a bout of fast-forward frames
-
-	worry(L,150);
-	return 0;
-}
-
-// acts as an extremely-fast-forward emulation update
-// that also doesn't render any graphics or generate any sounds,
-// and the user is unable to activate emulator commands during it.
-// if you load a savestate after calling this function,
-// it should leave no trace of having been called,
-// so you can do things like generate future emulation states every frame
-// while the user continues to see and hear normal emulation
-DEFINE_LUA_FUNCTION(emulua_emulateframeinvisible, "")
-{
-	if(FailVerifyAtFrameBoundary(L, "emu.emulateframeinvisible", 0,1))
-		return 0;
-
-	int oldDisableSound2 = disableSound2;
-	int oldDisableRamSearchUpdate = disableRamSearchUpdate;
-	disableSound2 = true;
-	disableRamSearchUpdate = true;
-
-	Update_Emulation_One_Before_Minimal();
-	Update_Frame_Fast();
-	UpdateLagCount();
-
-	disableSound2 = oldDisableSound2;
-	disableRamSearchUpdate = oldDisableRamSearchUpdate;
-
-	// disable video latency compensation for a few frames
-	// because it can get pretty slow if that's doing prediction updates every frame
-	// when the lua script is also doing prediction updates
-	disableVideoLatencyCompensationCount = VideoLatencyCompensation + 1;
-
-	worry(L,100);
-	return 0;
-}
-
-DEFINE_LUA_FUNCTION(emulua_speedmode, "mode")
-{
-	SpeedMode newSpeedMode = SPEEDMODE_NORMAL;
-	if(lua_isnumber(L,1))
-		newSpeedMode = (SpeedMode)luaL_checkinteger(L,1);
-	else
-	{
-		const char* str = luaL_checkstring(L,1);
-		if(!strcasecmp(str, "normal"))
-			newSpeedMode = SPEEDMODE_NORMAL;
-		else if(!strcasecmp(str, "nothrottle"))
-			newSpeedMode = SPEEDMODE_NOTHROTTLE;
-		else if(!strcasecmp(str, "turbo"))
-			newSpeedMode = SPEEDMODE_TURBO;
-		else if(!strcasecmp(str, "maximum"))
-			newSpeedMode = SPEEDMODE_MAXIMUM;
-	}
-
-	LuaContextInfo& info = GetCurrentInfo();
-	info.speedMode = newSpeedMode;
-	RefreshScriptSpeedStatus();
-	return 0;
-}
-#endif
-
-
 // I didn't make it clear enough what this function needs to do, so I'll spell it out this time:
 // 1: This function needs to cause emulation to run for 1 full frame, until the next frame boundary
 //    (more importantly, the duration it runs for must correspond with 1 frame of input recording movies).
@@ -1727,30 +1599,6 @@ DEFINE_LUA_FUNCTION(memory_setregister, "cpu_dot_registername_string,value")
 	return 0;
 }
 
-// TODO: fix
-// Creates a savestate object
-/*DEFINE_LUA_FUNCTION(state_create, "[location]")
-{
-	if(lua_isnumber(L,1))
-	{
-		// simply return the integer that got passed in
-		// (that's as good a savestate object as any for a numbered savestate slot)
-		lua_settop(L,1);
-		return 1;
-	}
-
-	if(!Core::IsRunning())
-		luaL_error(L, "savestate.create cannot be called before emulation has started.");
-
-	size_t len = State_GetSize();
-
-	// allocate the in-memory/anonymous savestate
-	unsigned char* stateBuffer = (unsigned char*)lua_newuserdata(L, len + 16); // 16 is for performance alignment reasons
-	stateBuffer[0] = 0;
-
-	return 1;
-}*/
-
 // savestate.save(location [, option])
 // saves the current emulation state to the given location
 // you can pass in either a savestate file number (an integer),
@@ -1782,18 +1630,6 @@ DEFINE_LUA_FUNCTION(state_save, "location[,option]")
 			State::Save((int)luaL_checkinteger(L,1));
 			return 0;
 		}	
-
-		/*case LUA_TUSERDATA: // in-memory save slot
-		{
-			unsigned char* stateBuffer = (unsigned char*)lua_touserdata(L,1);
-			if(stateBuffer)
-			{
-				stateBuffer += ((16 - (u64)stateBuffer) & 15); // for performance alignment reasons
-				State_Flush();
-				State_SaveToBuffer(&stateBuffer);
-			}
-			return 0;
-		}*/	
 	}
 }
 
@@ -1834,57 +1670,8 @@ DEFINE_LUA_FUNCTION(state_load, "location[,option]")
 		
 			return 0;
 		}
-
-		/*case LUA_TUSERDATA: // in-memory save slot
-		{
-			unsigned char* stateBuffer = (unsigned char*)lua_touserdata(L,1);
-			if(stateBuffer)
-			{
-				stateBuffer += ((16 - (u64)stateBuffer) & 15); // for performance alignment reasons
-				State_Flush();
-				if(stateBuffer[0])
-					State_LoadFromBuffer(&stateBuffer);
-				else // the first byte of a valid savestate is never 0
-					luaL_error(L, "attempted to load an anonymous savestate before saving it");
-			}
-			return 0;
-		}*/	
 	}
 }
-
-// savestate.verify(location)
-// verifies that the current emulation state matches the savestate that's already at the given location
-// you can pass in either a savestate file number (an integer),
-// OR you can pass in a savestate object that was returned by savestate.create() and has already saved to with savestate.save()
-/*DEFINE_LUA_FUNCTION(state_verify, "location")
-{
-	int type = lua_type(L,1);
-	switch(type)
-	{
-		case LUA_TNUMBER: // numbered save file
-		default:
-		{
-			State_Flush();
-			State_Verify((int)luaL_checkinteger(L,1));
-			return 0;
-		}
-
-		case LUA_TUSERDATA: // in-memory save slot
-		{
-			unsigned char* stateBuffer = (unsigned char*)lua_touserdata(L,1);
-			if(stateBuffer)
-			{
-				stateBuffer += ((16 - (u64)stateBuffer) & 15); // for performance alignment reasons
-				State_Flush();
-				if(stateBuffer[0])
-					State_VerifyBuffer(&stateBuffer);
-				else // the first byte of a valid savestate is never 0
-					luaL_error(L, "attempted to verify an anonymous savestate before saving it");
-			}
-			return 0;
-		}	
-	}
-}*/
 
 // savestate.loadscriptdata(location)
 // returns the user data associated with the given savestate
@@ -2642,60 +2429,6 @@ DEFINE_LUA_FUNCTION(emu_openscript, "filename")
     return 1;
 }
 
-// TODO: rewrite this
-/*DEFINE_LUA_FUNCTION(emulua_loadrom, "filename")
-{
-	struct Temp { Temp() {EnableStopAllLuaScripts(false);} ~Temp() {EnableStopAllLuaScripts(true);}} dontStopScriptsHere;
-	const char* filename = lua_isstring(L,1) ? lua_tostring(L,1) : NULL;
-	char curScriptDir[1024]; GetCurrentScriptDir(curScriptDir, 1024);
-	
-	if(Core::GetState() != Core::CORE_UNINITIALIZED)
-		Core::Stop();
-
-	SCoreStartupParameter& StartUp = SConfig::GetInstance().m_LocalCoreStartupParameter;
-
-	StartUp.m_BootType = SCoreStartupParameter::BOOT_ISO;
-	StartUp.m_strFilename = filename;
-	SConfig::GetInstance().m_LastFilename = filename;
-	StartUp.bRunCompareClient = false;
-	StartUp.bRunCompareServer = false;
-
-	// If for example the ISO file is bad we return here
-	if (!StartUp.AutoSetup(SCoreStartupParameter::BOOT_DEFAULT)) return 1;
-
-	// Load game specific settings
-	IniFile game_ini;
-	std::string unique_id = StartUp.GetUniqueID();
-	StartUp.m_strGameIni = std::string(File::GetUserPath(D_GAMECONFIG_IDX)) + unique_id + ".ini";
-	if (unique_id.size() == 6 && game_ini.Load(StartUp.m_strGameIni.c_str()))
-	{
-		// General settings
-		game_ini.Get("Core", "CPUOnThread",			&StartUp.bCPUThread, StartUp.bCPUThread);
-		game_ini.Get("Core", "SkipIdle",			&StartUp.bSkipIdle, StartUp.bSkipIdle);
-		game_ini.Get("Core", "EnableFPRF",			&StartUp.bEnableFPRF, StartUp.bEnableFPRF);
-		game_ini.Get("Core", "MMU",					&StartUp.bMMU, StartUp.bMMU);
-		game_ini.Get("Core", "BAT",					&StartUp.bMMUBAT, StartUp.bMMUBAT);
-		game_ini.Get("Core", "TLBHack",				&StartUp.iTLBHack, StartUp.iTLBHack);
-		game_ini.Get("Core", "VBeam",				&StartUp.bVBeam, StartUp.bVBeam);
-		game_ini.Get("Core", "FastDiscSpeed",	&StartUp.bFastDiscSpeed, StartUp.bFastDiscSpeed);
-		game_ini.Get("Core", "DSPHLE",			&StartUp.bDSPHLE, StartUp.bDSPHLE);
-		// Wii settings
-		if (StartUp.bWii)
-		{
-			// Flush possible changes to SYSCONF to file
-			SConfig::GetInstance().m_SYSCONF->Save();
-		}
-	} 
-
-	if (!Core::Init())
-		return 1;
-
-	Core::SetState(Core::CORE_RUN);
-
-	CallRegisteredLuaFunctions(LUACALL_ONSTART);
-    return 0;
-}
-*/
 DEFINE_LUA_FUNCTION(emulua_getframecount, "")
 {
 	lua_pushinteger(L, (lua_Integer)Movie::g_currentFrame);
@@ -3110,11 +2843,6 @@ static const struct luaL_reg movielib [] =
 	{"getname", movie_getname},
 	{"playback", movie_play},
 	{"getreadonly", movie_getreadonly},
-	{NULL, NULL}
-};
-static const struct luaL_reg soundlib [] =
-{
-//	{"clear", sound_clear},
 	{NULL, NULL}
 };
 
