@@ -43,13 +43,13 @@ class TASInputDlg : public wxDialog
 		void OnRightClickSlider(wxMouseEvent& event);
 		void ResetValues();
 		void GetValues(GCPadStatus* PadStatus);
-		void GetValues(u8* data, WiimoteEmu::ReportFeatures rptf);
+		void GetValues(u8* data, WiimoteEmu::ReportFeatures rptf, int ext, const struct wiimote_key key);
 		void SetTurbo(wxMouseEvent& event);
 		void SetTurboFalse(wxMouseEvent& event);
 		void SetTurboState(wxCheckBox* CheckBox, bool* TurboOn);
 		void ButtonTurbo();
 		void GetKeyBoardInput(GCPadStatus* PadStatus);
-		void GetKeyBoardInput(u8* data, WiimoteEmu::ReportFeatures rptf);
+		void GetKeyBoardInput(u8* data, WiimoteEmu::ReportFeatures rptf, int ext, const struct wiimote_key key);
 		bool TextBoxHasFocus();
 		void SetLandRTriggers();
 		bool TASHasFocus();
@@ -74,6 +74,7 @@ class TASInputDlg : public wxDialog
 			u32 range;
 			u32 defaultValue = 128;
 			bool SetByKeyboard = false;
+			bool reverse = false;
 		};
 
 		struct Button
@@ -94,12 +95,13 @@ class TASInputDlg : public wxDialog
 		void SetStickValue(bool* ActivatedByKeyboard, int* AmountPressed, wxTextCtrl* Textbox, int CurrentValue, int center = 128);
 		void SetButtonValue(Button* button, bool CurrentState);
 		void SetSliderValue(Control* control, int CurrentValue, int defaultValue = 128);
-		Stick CreateStick(int id_stick);
+		Stick CreateStick(int id_stick, int xRange, int yRange, u32 defaultX, u32 defaultY, bool reverseX, bool reverseY);
 		wxStaticBoxSizer* CreateStickLayout(Stick* tempStick, std::string title);
+		wxStaticBoxSizer* CreateAccellLayout(Control* x, Control* y, Control* z, std::string title);
 		Button CreateButton(const std::string& name);
-		Control CreateControl(long style, int width, int height, u32 range = 255);
+		Control CreateControl(long style, int width, int height, bool reverse = false, u32 range = 255, u32 defaultValue = 128);
 
-		Control lCont, rCont, xCont, yCont, zCont;
+		Control lCont, rCont, xCont, yCont, zCont, nxCont, nyCont, nzCont;
 		Button A, B, X, Y, Z, L, R, C, START, PLUS, MINUS, ONE, TWO, HOME, dpad_up, dpad_down, dpad_left, dpad_right;
 		Stick MainStick, CStick;
 
@@ -109,7 +111,6 @@ class TASInputDlg : public wxDialog
 		static const int WiiButtonsBitmask[13];
 
 		bool hasLayout = false;
-		bool isWii = false;
 
 		wxGridSizer* const buttons_dpad = new wxGridSizer(3);
 

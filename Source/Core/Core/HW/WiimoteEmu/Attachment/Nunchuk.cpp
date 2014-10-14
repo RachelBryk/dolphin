@@ -62,8 +62,8 @@ Nunchuk::Nunchuk(WiimoteEmu::ExtensionReg& _reg) : Attachment(_trans("Nunchuk"),
 
 void Nunchuk::GetState(u8* const data)
 {
-	wm_extension* const ncdata = (wm_extension*)data;
-	ncdata->bt = 0;
+	wm_nc* const ncdata = (wm_nc*)data;
+	ncdata->bt.hex = 0;
 
 	// stick
 	double state[2];
@@ -107,10 +107,11 @@ void Nunchuk::GetState(u8* const data)
 	// shake
 	EmulateShake(&accel, m_shake, m_shake_step);
 	// buttons
-	m_buttons->GetState(&ncdata->bt, nunchuk_button_bitmasks);
+	m_buttons->GetState(&ncdata->bt.hex, nunchuk_button_bitmasks);
+
 
 	// flip the button bits :/
-	ncdata->bt ^= 0x03;
+	ncdata->bt.hex ^= 0x03;
 
 	FillRawAccelFromGForceData(*(wm_accel*)&ncdata->ax, *(accel_cal*)&reg.calibration, accel);
 }
