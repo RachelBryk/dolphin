@@ -111,7 +111,8 @@ bool CSIDevice_GCController::GetData(u32& _Hi, u32& _Low)
 	memset(&PadStatus, 0, sizeof(PadStatus));
 
 	Pad::GetStatus(ISIDevice::m_iDeviceNumber, &PadStatus);
-	Movie::CallGCInputManip(&PadStatus, ISIDevice::m_iDeviceNumber);
+	if (!Movie::IsPlayingInput())
+		Movie::CallGCInputManip(&PadStatus, ISIDevice::m_iDeviceNumber);
 
 	u32 netValues[2];
 	if (NetPlay_GetInput(ISIDevice::m_iDeviceNumber, PadStatus, netValues))
@@ -127,6 +128,10 @@ bool CSIDevice_GCController::GetData(u32& _Hi, u32& _Low)
 	{
 		Movie::PlayController(&PadStatus, ISIDevice::m_iDeviceNumber);
 		Movie::InputUpdate();
+		
+		// Just show the input from the movie on the tas input gui
+		GCPadStatus tmp = PadStatus;
+		Movie::CallGCInputManip(&tmp, ISIDevice::m_iDeviceNumber);
 	}
 	else
 	{
