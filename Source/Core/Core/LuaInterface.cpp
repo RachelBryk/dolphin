@@ -1405,7 +1405,8 @@ DEFINE_LUA_FUNCTION(emulua_frameadvance, "")
 
 	// continue as normal
 	Movie::SetFrameStopping(false);
-	*PowerPC::GetStatePtr() = PowerPC::CPU_RUNNING;
+	//*PowerPC::GetStatePtr() = PowerPC::CPU_RUNNING;
+	Core::SetState(Core::CORE_RUN);
 
 	setJoystick = 0;
 	setButtons = 0;
