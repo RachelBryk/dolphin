@@ -23,6 +23,7 @@
 #include <wx/windowid.h>
 
 #include "Common/CommonTypes.h"
+#include "Core/Movie.h"
 #include "Core/HW/WiimoteEmu/WiimoteEmu.h"
 #include "Core/HW/WiimoteEmu/Attachment/Nunchuk.h"
 #include "DolphinWX/TASInputDlg.h"
@@ -790,10 +791,18 @@ void TASInputDlg::SetTurbo(wxMouseEvent& event)
 
 void TASInputDlg::ButtonTurbo()
 {
-	for (unsigned int i = 0; i < 14; ++i)
+	static int frame = Movie::g_currentFrame;
+	if (abs((int)(frame - (int)Movie::g_currentFrame)) > 2)
+		frame = Movie::g_currentFrame;
+
+	if (frame < Movie::g_currentFrame)
 	{
-		if (Buttons[i] != nullptr && Buttons[i]->TurboOn)
-			Buttons[i]->Checkbox->SetValue(!Buttons[i]->Checkbox->GetValue());
+		frame = Movie::g_currentFrame;
+		for (unsigned int i = 0; i < 14; ++i)
+		{
+			if (Buttons[i] != nullptr && Buttons[i]->TurboOn)	
+				Buttons[i]->Checkbox->SetValue(!Buttons[i]->Checkbox->GetValue());
+		}
 	}
 }
 
