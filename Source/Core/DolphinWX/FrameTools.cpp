@@ -220,7 +220,7 @@ wxMenuBar* CFrame::CreateMenu()
 	movieMenu->Check(IDM_RECORDREADONLY, true);
 	movieMenu->AppendSeparator();
 	movieMenu->AppendCheckItem(IDM_TOGGLE_DUMPFRAMES, _("Dump frames"));
-	movieMenu->Check(IDM_TOGGLE_DUMPFRAMES, g_ActiveConfig.bDumpFrames);
+	movieMenu->Check(IDM_TOGGLE_DUMPFRAMES, SConfig::GetInstance().m_DumpFrames);
 	movieMenu->AppendCheckItem(IDM_TOGGLE_DUMPAUDIO, _("Dump audio"));
 	movieMenu->Check(IDM_TOGGLE_DUMPAUDIO, SConfig::GetInstance().m_DumpAudio);
 	menubar->Append(movieMenu, _("&Movie"));
@@ -256,11 +256,14 @@ wxMenuBar* CFrame::CreateMenu()
 	toolsMenu->Append(IDM_FIFOPLAYER, _("Fifo Player"));
 
 	toolsMenu->AppendSeparator();
-	toolsMenu->AppendCheckItem(IDM_CONNECT_WIIMOTE1, GetMenuLabel(HK_WIIMOTE1_CONNECT));
-	toolsMenu->AppendCheckItem(IDM_CONNECT_WIIMOTE2, GetMenuLabel(HK_WIIMOTE2_CONNECT));
-	toolsMenu->AppendCheckItem(IDM_CONNECT_WIIMOTE3, GetMenuLabel(HK_WIIMOTE3_CONNECT));
-	toolsMenu->AppendCheckItem(IDM_CONNECT_WIIMOTE4, GetMenuLabel(HK_WIIMOTE4_CONNECT));
-	toolsMenu->AppendCheckItem(IDM_CONNECT_BALANCEBOARD, GetMenuLabel(HK_BALANCEBOARD_CONNECT));
+	wxMenu* wiimoteMenu = new wxMenu;
+	toolsMenu->AppendSubMenu(wiimoteMenu, _("Connect Wiimotes"));
+	wiimoteMenu->AppendCheckItem(IDM_CONNECT_WIIMOTE1, GetMenuLabel(HK_WIIMOTE1_CONNECT));
+	wiimoteMenu->AppendCheckItem(IDM_CONNECT_WIIMOTE2, GetMenuLabel(HK_WIIMOTE2_CONNECT));
+	wiimoteMenu->AppendCheckItem(IDM_CONNECT_WIIMOTE3, GetMenuLabel(HK_WIIMOTE3_CONNECT));
+	wiimoteMenu->AppendCheckItem(IDM_CONNECT_WIIMOTE4, GetMenuLabel(HK_WIIMOTE4_CONNECT));
+	wiimoteMenu->AppendSeparator();
+	wiimoteMenu->AppendCheckItem(IDM_CONNECT_BALANCEBOARD, GetMenuLabel(HK_BALANCEBOARD_CONNECT));
 
 	menubar->Append(toolsMenu, _("&Tools"));
 
@@ -729,8 +732,8 @@ void CFrame::OnTogglePauseMovie(wxCommandEvent& WXUNUSED (event))
 
 void CFrame::OnToggleDumpFrames(wxCommandEvent& WXUNUSED(event))
 {
-	g_Config.bDumpFrames = !g_Config.bDumpFrames;
-	g_SWVideoConfig.bDumpFrames = !g_SWVideoConfig.bDumpFrames;
+	SConfig::GetInstance().m_DumpFrames = !SConfig::GetInstance().m_DumpFrames;
+	SConfig::GetInstance().SaveSettings();
 }
 
 void CFrame::OnToggleDumpAudio(wxCommandEvent& WXUNUSED(event))
@@ -1551,7 +1554,7 @@ void CFrame::OnConnectWiimote(wxCommandEvent& event)
 	ConnectWiimote(event.GetId() - IDM_CONNECT_WIIMOTE1, !GetUsbPointer()->AccessWiiMote((event.GetId() - IDM_CONNECT_WIIMOTE1) | 0x100)->IsConnected());
 }
 
-// Toogle fullscreen. In Windows the fullscreen mode is accomplished by expanding the m_Panel to cover
+// Toggle fullscreen. In Windows the fullscreen mode is accomplished by expanding the m_Panel to cover
 // the entire screen (when we render to the main window).
 void CFrame::OnToggleFullscreen(wxCommandEvent& WXUNUSED (event))
 {

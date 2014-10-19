@@ -327,6 +327,7 @@ void SConfig::SaveMovieSettings(IniFile& ini)
 
 	movie->Set("PauseMovie", m_PauseMovie);
 	movie->Set("Author", m_strMovieAuthor);
+	movie->Set("DumpFrames", m_DumpFrames);
 }
 
 void SConfig::SaveDSPSettings(IniFile& ini)
@@ -499,11 +500,11 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 
 	core->Get("HLE_BS2",      &m_LocalCoreStartupParameter.bHLE_BS2, false);
 #ifdef _M_X86
-	core->Get("CPUCore",      &m_LocalCoreStartupParameter.iCPUCore, 1);
+	core->Get("CPUCore",      &m_LocalCoreStartupParameter.iCPUCore, SCoreStartupParameter::CORE_JIT64);
 #elif _M_ARM_32
-	core->Get("CPUCore",      &m_LocalCoreStartupParameter.iCPUCore, 3);
+	core->Get("CPUCore",      &m_LocalCoreStartupParameter.iCPUCore, SCoreStartupParameter::CORE_JITARM);
 #else
-	core->Get("CPUCore",      &m_LocalCoreStartupParameter.iCPUCore, 0);
+	core->Get("CPUCore",      &m_LocalCoreStartupParameter.iCPUCore, SCoreStartupParameter::CORE_INTERPRETER);
 #endif
 	core->Get("Fastmem",           &m_LocalCoreStartupParameter.bFastmem,      true);
 	core->Get("DSPThread",         &m_LocalCoreStartupParameter.bDSPThread,    false);
@@ -536,7 +537,6 @@ void SConfig::LoadCoreSettings(IniFile& ini)
 	core->Get("RunCompareServer",          &m_LocalCoreStartupParameter.bRunCompareServer, false);
 	core->Get("RunCompareClient",          &m_LocalCoreStartupParameter.bRunCompareClient, false);
 	core->Get("MMU",                       &m_LocalCoreStartupParameter.bMMU,              false);
-	core->Get("TLBHack",                   &m_LocalCoreStartupParameter.bTLBHack,          false);
 	core->Get("BBDumpPort",                &m_LocalCoreStartupParameter.iBBDumpPort,       -1);
 	core->Get("VBeam",                     &m_LocalCoreStartupParameter.bVBeamSpeedHack,   false);
 	core->Get("SyncGPU",                   &m_LocalCoreStartupParameter.bSyncGPU,          false);
@@ -554,6 +554,7 @@ void SConfig::LoadMovieSettings(IniFile& ini)
 
 	movie->Get("PauseMovie", &m_PauseMovie, false);
 	movie->Get("Author", &m_strMovieAuthor, "");
+	movie->Get("DumpFrames", &m_DumpFrames, false);
 }
 
 void SConfig::LoadDSPSettings(IniFile& ini)

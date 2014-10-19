@@ -62,14 +62,11 @@ namespace DriverDetails
 		// Bug: No Dynamic UBO array object access
 		// Affected Devices: Qualcomm/Adreno
 		// Started Version: 14
-		// Ended Version: 53
+		// Ended Version: 95
 		// Accessing UBO array members dynamically causes the Adreno shader compiler to crash
 		// Errors out with "Internal Error"
-		// With v53 video drivers, dynamic member access works. But there is a new bug
-		// The only time we access UBO array members dynamically is with a conversion
-		// int posmtx = int(fposmtx);
-		// This line will will posmtx with a seemingly random number and cause issues.
-		// Bug still active with v53 until we switch to using integers for the fposmtx attribute
+		// With v53 video drivers, dynamic member access "works." It works to the extent that it doesn't crash.
+		// With v95 drivers everything works as it should.
 		BUG_NODYNUBOACCESS = 0,
 		// Bug: Centroid is broken in shaders
 		// Affected devices: Qualcomm/Adreno
@@ -177,7 +174,7 @@ namespace DriverDetails
 		// Bug: Intel's Window driver broke buffer_storage with GL_ELEMENT_ARRAY_BUFFER
 		// Affected devices: Intel (Windows)
 		// Started Version: 15.36.3.64.3907 (10.18.10.3907)
-		// Ended Version: -1
+		// Ended Version: 15.36.7.64.3960 (10.18.10.3960)
 		// Intel implemented buffer_storage in their GL 4.3 driver.
 		// It works for all the buffer types we use except GL_ELEMENT_ARRAY_BUFFER.
 		// Causes complete blackscreen issues.

@@ -150,7 +150,7 @@ bool Jit64::HandleFault(uintptr_t access_address, SContext* ctx)
 {
 	uintptr_t stack = (uintptr_t)m_stack, diff = access_address - stack;
 	// In the trap region?
-	if (stack && diff >= GUARD_OFFSET && diff < GUARD_OFFSET + GUARD_SIZE)
+	if (m_enable_blr_optimization && diff >= GUARD_OFFSET && diff < GUARD_OFFSET + GUARD_SIZE)
 	{
 		WARN_LOG(POWERPC, "BLR cache disabled due to excessive BL in the emulated program.");
 		m_enable_blr_optimization = false;
@@ -603,6 +603,7 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 		js.compilerPC = ops[i].address;
 		js.op = &ops[i];
 		js.instructionNumber = i;
+		js.instructionsLeft = (code_block.m_num_instructions - 1) - i;
 		const GekkoOPInfo *opinfo = ops[i].opinfo;
 		js.downcountAmount += opinfo->numCycles;
 
@@ -737,7 +738,7 @@ const u8* Jit64::DoJit(u32 em_address, PPCAnalyst::CodeBuffer *code_buf, JitBloc
 			for (int k = 0; k < 3 && gpr.NumFreeRegisters() >= 2; k++)
 			{
 				int reg = ops[i].regsIn[k];
-				if (reg >= 0 && (ops[i].gprInUse & (1 << reg)) && !gpr.R(reg).IsImm())
+				if (reg >= 0 && (ops[i].gprInReg & (1 << reg)) && !gpr.R(reg).IsImm())
 					gpr.BindToRegister(reg, true, false);
 			}
 			for (int k = 0; k < 4 && fpr.NumFreeRegisters() >= 2; k++)

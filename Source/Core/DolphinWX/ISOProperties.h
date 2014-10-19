@@ -67,12 +67,10 @@ private:
 	DECLARE_EVENT_TABLE();
 
 	// Core
-	wxCheckBox *CPUThread, *SkipIdle, *MMU, *DCBZOFF, *TLBHack;
+	wxCheckBox *CPUThread, *SkipIdle, *MMU, *DCBZOFF;
 	wxCheckBox *VBeam, *SyncGPU, *FastDiscSpeed, *BlockMerging, *DSPHLE;
 	// Wii
 	wxCheckBox *EnableWideScreen;
-	// Video
-	wxCheckBox *UseBBox;
 
 	wxArrayString arrayStringFor_EmuState;
 	wxChoice *EmuState;
@@ -128,7 +126,6 @@ private:
 		ID_IDLESKIP,
 		ID_MMU,
 		ID_DCBZOFF,
-		ID_TLBHACK,
 		ID_VBEAM,
 		ID_SYNCGPU,
 		ID_DISCSPEED,

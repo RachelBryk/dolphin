@@ -94,7 +94,6 @@ struct VideoConfig final
 	bool bDumpTextures;
 	bool bHiresTextures;
 	bool bDumpEFBTarget;
-	bool bDumpFrames;
 	bool bUseFFV1;
 	bool bFreeLook;
 	bool bAnaglyphStereo;
@@ -115,7 +114,6 @@ struct VideoConfig final
 	int iPhackvalue[3];
 	std::string sPhackvalue[2];
 	float fAspectRatioHackW, fAspectRatioHackH;
-	bool bUseBBox;
 	bool bEnablePixelLighting;
 	bool bFastDepthCalc;
 	int iLog; // CONF_ bits
