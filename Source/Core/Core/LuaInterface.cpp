@@ -38,37 +38,41 @@ extern "C" {
 namespace Lua {
 
 //please work
-int joystickx = 128;
-int joysticky = 128;
-u16 buttons = 0;
-u8 setJoystick = 0;
-u8 setButtons = 0;
+struct pad
+{
+	int joystickx = 128;
+	int joysticky = 128;
+	u16 buttons = 0;
+	u8 setJoystick = 0;
+	u8 setButtons = 0;
+} s_pad[4];
+
 u8 frames_to_hold = 2; // TODO: don't hardcode
 
 //please work
-void GetInput(GCPadStatus* pad)
+void GetInput(GCPadStatus* pad, int index)
 {
-	if (setJoystick)
+	if (s_pad[index].setJoystick)
 	{
-		pad->stickX = joystickx;
-		pad->stickY = joysticky;
-		setJoystick++;
-		if (setJoystick > frames_to_hold)
-			setJoystick = 0;
+		pad->stickX = s_pad[index].joystickx;
+		pad->stickY = s_pad[index].joysticky;
+		s_pad[index].setJoystick++;
+		if (s_pad[index].setJoystick > frames_to_hold)
+			s_pad[index].setJoystick = 0;
 	}
-	if (setButtons)
+	if (s_pad[index].setButtons)
 	{
-		pad->button |= buttons;
-		setButtons++;
-		if (setButtons > frames_to_hold)
-			setButtons = 0;
+		pad->button |= s_pad[index].buttons;
+		s_pad[index].setButtons++;
+		if (s_pad[index].setButtons > frames_to_hold)
+			s_pad[index].setButtons = 0;
 	}
 }
-void setJoy(int x, int y)
+void setJoy(int x, int y, int index)
 {
-	joystickx = x;
-	joysticky = y;
-	setJoystick = 1;
+	s_pad[index].joystickx = x;
+	s_pad[index].joysticky = y;
+	s_pad[index].setJoystick = 1;
 }
 
 bool g_disableStatestateWarnings;
@@ -1280,8 +1284,11 @@ DEFINE_LUA_FUNCTION(emulua_frameadvance, "")
 	//*PowerPC::GetStatePtr() = PowerPC::CPU_RUNNING;
 	Core::SetState(Core::CORE_RUN);
 
-	setJoystick = 0;
-	setButtons = 0;
+	for (int i = 0; i < 4; ++i)
+	{
+		s_pad[i].setJoystick = 0;
+		s_pad[i].setButtons = 0;
+	}
 
 	return 0;
 }
@@ -1740,44 +1747,45 @@ DEFINE_LUA_FUNCTION(state_savescriptdata, "location")
 
 
 //please work
-DEFINE_LUA_FUNCTION(joy_joystick, "joyx,joyy")
+DEFINE_LUA_FUNCTION(joy_joystick, "index,joyx,joyy")
 {
-	setJoy(luaL_checkinteger(L,1), luaL_checkinteger(L,2));
+	setJoy(luaL_checkinteger(L,1), luaL_checkinteger(L,2), luaL_checkinteger(L,3));
 	return 0;
 }
 
-DEFINE_LUA_FUNCTION(joy_set, "button")
+DEFINE_LUA_FUNCTION(joy_set, "index,button")
 {
-	buttons = 0;
+	int index = luaL_checkinteger(L,1);
+	s_pad[index].buttons = 0;
 
 	size_t size;
-	std::string but = luaL_checklstring(L, 1, &size);
+	std::string but = luaL_checklstring(L, 2, &size);
 	for (int i = 0; i < size; ++i)
 	{
 		if (but.substr(i, i+1) == "a")
-			buttons |= PAD_BUTTON_A;
+			s_pad[index].buttons |= PAD_BUTTON_A;
 		if (but.substr(i, i+1) == "b")
-			buttons |= PAD_BUTTON_B;
+			s_pad[index].buttons |= PAD_BUTTON_B;
 		if (but.substr(i, i+1) == "x")
-			buttons |= PAD_BUTTON_X;
+			s_pad[index].buttons |= PAD_BUTTON_X;
 		if (but.substr(i, i+1) == "y")
-			buttons |= PAD_BUTTON_Y;
+			s_pad[index].buttons |= PAD_BUTTON_Y;
 		if (but.substr(i, i+1) == "z")
-			buttons |= PAD_TRIGGER_Z;
+			s_pad[index].buttons |= PAD_TRIGGER_Z;
 		if (but.substr(i, i+1) == "s")
-			buttons |= PAD_BUTTON_START;
+			s_pad[index].buttons |= PAD_BUTTON_START;
 		if (but.substr(i, i+1) == "a")
-			buttons |= PAD_BUTTON_A;
+			s_pad[index].buttons |= PAD_BUTTON_A;
 		if (but.substr(i, i+1) == "d")
-			buttons |= PAD_BUTTON_DOWN;
+			s_pad[index].buttons |= PAD_BUTTON_DOWN;
 		if (but.substr(i, i+1) == "u")
-			buttons |= PAD_BUTTON_UP;
+			s_pad[index].buttons |= PAD_BUTTON_UP;
 		if (but.substr(i, i+1) == "l")
-			buttons |= PAD_BUTTON_LEFT;
+			s_pad[index].buttons |= PAD_BUTTON_LEFT;
 		if (but.substr(i, i+1) == "r")
-			buttons |= PAD_BUTTON_RIGHT;
+			s_pad[index].buttons |= PAD_BUTTON_RIGHT;
 	}
-	setButtons = 1;
+	s_pad[index].setButtons = 1;
 	return 0;
 }
 

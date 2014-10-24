@@ -135,7 +135,7 @@ bool CSIDevice_GCController::GetData(u32& _Hi, u32& _Low)
 	}
 	else
 	{
-		Lua::GetInput(&PadStatus);
+		Lua::GetInput(&PadStatus, ISIDevice::m_iDeviceNumber);
 	}
 	if (Movie::IsRecordingInput())
 	{
