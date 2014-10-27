@@ -42,9 +42,15 @@ struct pad
 {
 	int joystickx = 128;
 	int joysticky = 128;
+	int ctickx = 128;
+	int cticky = 128;
+	int l = 0;
+	int r = 0;
 	u16 buttons = 0;
 	u8 setJoystick = 0;
+	u8 setCstick = 0;
 	u8 setButtons = 0;
+	u8 settrigs = 0;
 } s_pad[4];
 
 u8 frames_to_hold = 2; // TODO: don't hardcode
@@ -68,12 +74,28 @@ void GetInput(GCPadStatus* pad, int index)
 			s_pad[index].setButtons = 0;
 	}
 }
-void setJoy(int x, int y, int index)
+void setJoy(int index, int x, int y)
 {
 	s_pad[index].joystickx = x;
 	s_pad[index].joysticky = y;
 	s_pad[index].setJoystick = 1;
 }
+
+void setC(int index, int x, int y)
+{
+	s_pad[index].joystickx = x;
+	s_pad[index].joysticky = y;
+	s_pad[index].setCstick = 1;
+}
+
+
+void setTrigger(int index, int l, int r)
+{
+	s_pad[index].joystickx = l;
+	s_pad[index].joysticky = r;
+	s_pad[index].settrigs = 1;
+}
+
 
 bool g_disableStatestateWarnings;
 bool g_onlyCallSavestateCallbacks;
@@ -1288,6 +1310,7 @@ DEFINE_LUA_FUNCTION(emulua_frameadvance, "")
 	{
 		s_pad[i].setJoystick = 0;
 		s_pad[i].setButtons = 0;
+		s_pad[i].setCstick = 0;
 	}
 
 	return 0;
@@ -1750,6 +1773,18 @@ DEFINE_LUA_FUNCTION(state_savescriptdata, "location")
 DEFINE_LUA_FUNCTION(joy_joystick, "index,joyx,joyy")
 {
 	setJoy(luaL_checkinteger(L,1), luaL_checkinteger(L,2), luaL_checkinteger(L,3));
+	return 0;
+}
+
+DEFINE_LUA_FUNCTION(joy_Cstick, "index,joyx,joyy")
+{
+	setC(luaL_checkinteger(L,1), luaL_checkinteger(L,2), luaL_checkinteger(L,3));
+	return 0;
+}
+
+DEFINE_LUA_FUNCTION(joy_triggers, "index,L,R")
+{
+	setTrigger(luaL_checkinteger(L,1), luaL_checkinteger(L,2), luaL_checkinteger(L,3));
 	return 0;
 }
 
@@ -2808,6 +2843,8 @@ static const struct luaL_reg joylib [] =
 	//{"peekup", joy_peekup},
 	{"set", joy_set},
 	{"joystick", joy_joystick},
+	{"cstick", joy_Cstick},
+	{"trigger", joy_triggers},
 	//// alternative names
 	//{"read", joy_get},
 	//{"write", joy_set},
