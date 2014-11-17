@@ -178,6 +178,7 @@ struct SCoreStartupParameter
 	bool bVBeamSpeedHack;
 	bool bSyncGPU;
 	bool bFastDiscSpeed;
+	u64 time;
 
 	int SelectedLanguage;
 

@@ -12,6 +12,7 @@
 #include "Common/StringUtil.h"
 #include "Common/Thread.h"
 #include "Common/Timer.h"
+#include "Core/BootManager.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
@@ -85,6 +86,8 @@ static std::string s_InputDisplay[8];
 
 static GCManipFunction gcmfunc = nullptr;
 static WiiManipFunction wiimfunc = nullptr;
+
+static int end = false;
 
 static void EnsureTmpInputSize(size_t bound)
 {
@@ -163,6 +166,13 @@ void FrameUpdate()
 		FrameSkipping();
 
 	s_bPolled = false;
+
+	if (end)
+	{
+		end++;
+		if (end == 3)
+		BootManager::Stop();
+	}
 }
 
 // called when game is booting up, even if no movie is active,
@@ -224,7 +234,11 @@ void InputUpdate()
 	}
 
 	if (IsPlayingInput() && g_currentInputCount == (g_totalInputCount - 1) && SConfig::GetInstance().m_PauseMovie)
-		Core::SetState(Core::CORE_PAUSE);
+		//Core::SetState(Core::CORE_PAUSE);
+	{
+		Core::SaveScreenShot();
+		end = 1;
+	}
 }
 
 void SetFrameSkipping(unsigned int framesToSkip)
