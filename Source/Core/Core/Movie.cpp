@@ -87,7 +87,7 @@ static std::string s_InputDisplay[8];
 static GCManipFunction gcmfunc = nullptr;
 static WiiManipFunction wiimfunc = nullptr;
 
-static int end = false;
+static int end = 0;
 
 static void EnsureTmpInputSize(size_t bound)
 {
@@ -171,7 +171,7 @@ void FrameUpdate()
 	{
 		end++;
 		if (end == 3)
-		BootManager::Stop();
+			BootManager::Stop();
 	}
 }
 
@@ -179,6 +179,7 @@ void FrameUpdate()
 // but potentially after BeginRecordingInput or PlayInput has been called.
 void Init()
 {
+	end = 0;
 	s_bPolled = false;
 	s_bFrameStep = false;
 	s_bFrameStop = false;
