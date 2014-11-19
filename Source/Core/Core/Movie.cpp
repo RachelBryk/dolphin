@@ -825,8 +825,8 @@ void ReadHeader()
 
 bool PlayInput(const std::string& filename)
 {
-	if (s_playMode != MODE_NONE)
-		return false;
+	//if (s_playMode != MODE_NONE)
+	//	return false;
 
 	if (!File::Exists(filename))
 		return false;
