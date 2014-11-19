@@ -627,7 +627,10 @@ void CFrame::BootGame(const std::string& filename)
 	SCoreStartupParameter& StartUp = SConfig::GetInstance().m_LocalCoreStartupParameter;
 
 	if (Core::GetState() != Core::CORE_UNINITIALIZED)
+	{
+		PanicAlert("GHRFDSIJGHO");
 		return;
+	}
 
 	// Start filename if non empty.
 	// Start the selected ISO, or try one of the saved paths.
@@ -835,6 +838,8 @@ void CFrame::OnPlayRecording(wxCommandEvent& WXUNUSED (event))
 
 		lastPath = (WxStrToStr(path));
 	}
+	else
+	{
 
 	File::IOFile movie;
 	Movie::DTMHeader header;
@@ -845,6 +850,7 @@ void CFrame::OnPlayRecording(wxCommandEvent& WXUNUSED (event))
 	movie.Seek(0, SEEK_SET);
 	movie.WriteArray(&header, 1);
 	movie.Close();
+	}
 
 	if (!Movie::IsReadOnly())
 	{
@@ -1291,6 +1297,7 @@ void CFrame::OnStopped()
 	m_GameListCtrl->SetFocus();
 	UpdateGUI();
 
+	Common::SleepCurrentThread(300);
 	wxCommandEvent evt;
 	OnPlayRecording(evt);
 }
