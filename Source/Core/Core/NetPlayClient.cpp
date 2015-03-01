@@ -881,7 +881,7 @@ bool NetPlayClient::GetNetPads(const u8 pad_nb, GCPadStatus* pad_status)
 			return false;
 
 		// just exit loop, so we can pause and load our save state.
-		if (savestate_size)
+		if (savestate_size == 1)
 			return false;
 
 		// TODO: use a condition instead of sleeping
