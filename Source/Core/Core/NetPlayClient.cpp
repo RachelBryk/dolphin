@@ -72,6 +72,7 @@ NetPlayClient::NetPlayClient(const std::string& address, const u16 port, NetPlay
 	, m_traversal_client(nullptr)
 {
 	m_target_buffer_size = 20;
+	savestate_size = 0;
 	ClearBuffers();
 
 	is_connected = false;
