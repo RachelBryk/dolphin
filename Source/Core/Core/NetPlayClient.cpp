@@ -437,11 +437,12 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
 
 	case NP_MSG_SAVESTATE:
 	{
-		packet >> savestate_size;
+		savestate_size = 1;
 		if (File::Exists(File::GetUserPath(D_STATESAVES_IDX) + "netplay.sav"))
 			File::Delete(File::GetUserPath(D_STATESAVES_IDX) + "netplay.sav");
 		if (Core::GetState() != Core::CORE_UNINITIALIZED)
-			Core::SetState(Core::CORE_PAUSE);
+			Core::PauseAndLock(true, false);
+		packet >> savestate_size;
 		for (int i = 0; i < 4; ++i)
 		{
 			m_pad_buffer[i].Clear();
@@ -467,7 +468,7 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
 			state.Close();
 			State::LoadAs(File::GetUserPath(D_STATESAVES_IDX) + "netplay.sav");
 			savestate_size = 0;
-			Core::SetState(Core::CORE_RUN);
+			Core::PauseAndLock(false, true);
 		//	sf::Packet spac;
 		//	spac << (MessageId)NP_MSG_SAVESTATE_DONE;
 		}
