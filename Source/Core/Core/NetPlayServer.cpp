@@ -585,6 +585,19 @@ unsigned int NetPlayServer::OnData(sf::Packet& packet, Client& player)
 	}
 	break;
 
+	case NP_MSG_SAVESTATE_DONE:
+	{
+		static u8 numDone = 0;
+		numDone++;
+		if (numDone == m_players.size())
+		{
+			sf::Packet spac;
+			spac << (MessageId)NP_MSG_SAVESTATE_ALL_DONE;
+			numDone = 0;
+		}
+	}
+		break;
+
 	default:
 		PanicAlertT("Unknown message with id:%d received from player:%d Kicking player!", mid, player.pid);
 		// unknown message, kick the client
@@ -762,6 +775,7 @@ void NetPlayServer::SendSaveState(const std::string file)
 	u8 buffer[4096];
 	while (size > sent)
 	{
+		std::lock_guard<std::recursive_mutex> lks(m_crit.send);
 		if (size > (sent + 4095))
 		{
 			state.ReadBytes(buffer + 1, 4095);
@@ -779,6 +793,9 @@ void NetPlayServer::SendSaveState(const std::string file)
 			enet_peer_send(p.second.socket, 0, epac);
 		}
 	}
+	spac.clear();
+	spac << (MessageId)NP_MSG_SAVESTATE_DONE;
+	SendToClients(spac);
 }
 
 // called from ---GUI--- thread
