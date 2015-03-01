@@ -441,8 +441,11 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
 			File::Delete(File::GetUserPath(D_STATESAVES_IDX) + "netplay.sav");
 		if (Core::GetState() != Core::CORE_UNINITIALIZED)
 			Core::SetState(Core::CORE_PAUSE);
-		m_pad_buffer->Clear();
-		m_wiimote_buffer->Clear();
+		for (int i = 0; i < 4; ++i)
+		{
+			m_pad_buffer[i].Clear();
+			m_wiimote_buffer[i].Clear();
+		}
 	}
 	break;
 
@@ -853,6 +856,10 @@ bool NetPlayClient::GetNetPads(const u8 pad_nb, GCPadStatus* pad_status)
 	while (!m_pad_buffer[pad_nb].Pop(*pad_status))
 	{
 		if (!m_is_running)
+			return false;
+
+		// just exit loop, so we can pause and load our save state.
+		if (savestate_size)
 			return false;
 
 		// TODO: use a condition instead of sleeping
