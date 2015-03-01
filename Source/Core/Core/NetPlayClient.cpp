@@ -469,30 +469,8 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
 			State::LoadAs(File::GetUserPath(D_STATESAVES_IDX) + "netplay.sav");
 			savestate_size = 0;
 			Core::PauseAndLock(false, true);
-		//	sf::Packet spac;
-		//	spac << (MessageId)NP_MSG_SAVESTATE_DONE;
 		}
 
-	}
-	break;
-
-	case NP_MSG_SAVESTATE_DONE:
-	{
-		if (savestate_size != 0)
-			PanicAlert("FDSFH");
-
-	}
-	break;
-
-	case NP_MSG_SAVESTATE_ALL_DONE:
-	{
-		for (int i = 0; i < 4; ++i)
-		{
-			m_pad_buffer[i].Clear();
-			m_wiimote_buffer[i].Clear();
-		}
-		Common::SleepCurrentThread(1000);
-		Core::SetState(Core::CORE_RUN);
 	}
 	break;
 
