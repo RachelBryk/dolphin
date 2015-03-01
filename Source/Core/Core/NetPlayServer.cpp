@@ -741,7 +741,7 @@ std::string NetPlayServer::GetInterfaceHost(const std::string inter)
 	return "?";
 }
 
-void NetPlayServer::SendSaveState(const std::string file)
+void NetPlayServer::SendSaveState(const std::string& file)
 {
 	if (!File::Exists(file))
 		return;
