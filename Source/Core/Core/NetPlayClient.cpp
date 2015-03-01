@@ -441,6 +441,8 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
 			File::Delete(File::GetUserPath(D_STATESAVES_IDX) + "netplay.sav");
 		if (Core::GetState() != Core::CORE_UNINITIALIZED)
 			Core::SetState(Core::CORE_PAUSE);
+		m_pad_buffer->Clear();
+		m_wiimote_buffer->Clear();
 	}
 	break;
 
@@ -459,8 +461,6 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
 		if (state.GetSize() == savestate_size && Core::GetState() != Core::CORE_UNINITIALIZED)
 		{
 			state.Close();
-			m_pad_buffer->Clear();
-			m_wiimote_buffer->Clear();
 			State::LoadAs(File::GetUserPath(D_STATESAVES_IDX) + "netplay.sav");
 			Core::SetState(Core::CORE_RUN);
 			savestate_size = 0;
