@@ -47,6 +47,8 @@ public:
 	std::unordered_set<std::string> GetInterfaceSet();
 	std::string GetInterfaceHost(const std::string inter);
 
+	void SendSaveState(const std::string file);
+
 	bool is_connected;
 
 #ifdef USE_UPNP

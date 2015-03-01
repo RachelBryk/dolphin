@@ -6,6 +6,7 @@
 #include "Core/Core.h"
 #include "Core/Movie.h"
 #include "Core/NetPlayClient.h"
+#include "Core/State.h"
 #include "Core/HW/EXI_DeviceIPL.h"
 #include "Core/HW/SI.h"
 #include "Core/HW/SI_DeviceDanceMat.h"
@@ -432,6 +433,43 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
 		m_dialog->Update();
 	}
 	break;
+
+	case NP_MSG_SAVESTATE:
+	{
+		packet >> savestate_size;
+		if (File::Exists(File::GetUserPath(D_STATESAVES_IDX) + "netplay.sav"))
+			File::Delete(File::GetUserPath(D_STATESAVES_IDX) + "netplay.sav");
+		if (Core::GetState() != Core::CORE_UNINITIALIZED)
+			Core::SetState(Core::CORE_PAUSE);
+	}
+	break;
+
+	case NP_MSG_SAVESTATE_DATA:
+	{
+		u8 buffer[4095];
+		for (int i = 0; i < 4095; ++i)
+			packet >> buffer[i];
+		File::IOFile state;
+		state.Open(File::GetUserPath(D_STATESAVES_IDX) + "netplay.sav", "ab");
+		if (state.GetSize() < savestate_size)
+		{
+			state.WriteBytes(buffer, state.GetSize() + 4095 < savestate_size ? 4095 : savestate_size - state.GetSize());
+		}
+
+		if (state.GetSize() == savestate_size && Core::GetState() != Core::CORE_UNINITIALIZED)
+		{
+			state.Close();
+			m_pad_buffer->Clear();
+			m_wiimote_buffer->Clear();
+			State::LoadAs(File::GetUserPath(D_STATESAVES_IDX) + "netplay.sav");
+			Core::SetState(Core::CORE_RUN);
+			savestate_size = 0;
+		}
+
+	}
+	break;
+
+
 
 	default:
 		PanicAlertT("Unknown message received with id : %d", mid);

@@ -75,7 +75,7 @@ public:
 
 	u8 LocalWiimoteToInGameWiimote(u8 local_pad);
 
-	enum State
+	enum net_State
 	{
 		WaitingForTraversalClientConnection,
 		WaitingForTraversalClientConnectReady,
@@ -136,6 +136,8 @@ private:
 	std::string m_player_name;
 	bool m_connecting;
 	TraversalClient* m_traversal_client;
+
+	u32 savestate_size;
 };
 
 void NetPlay_Enable(NetPlayClient* const np);

@@ -740,6 +740,46 @@ std::string NetPlayServer::GetInterfaceHost(const std::string inter)
 	return "?";
 }
 
+void NetPlayServer::SendSaveState(const std::string file)
+{
+	if (!File::Exists(file))
+		return;
+	File::IOFile state;
+	state.Open(file, "rb");
+
+	u32 size = (u32)state.GetSize();
+	sf::Packet spac;
+	spac << (MessageId)NP_MSG_SAVESTATE;
+	spac << size;
+
+	for (auto& p : m_players)
+	{
+		Send(p.second.socket, spac);
+	}
+
+	u32 sent = 0;
+	u8 buffer[4096];
+	while (size > sent)
+	{
+		if (size > (sent + 4095))
+		{
+			state.ReadBytes(buffer + 1, 4095);
+			sent += 4095;
+		}
+		else
+		{
+			state.ReadBytes(buffer + 1, size - sent);
+			sent += size-sent;
+		}
+		buffer[0] = (MessageId)NP_MSG_SAVESTATE_DATA;
+		ENetPacket* epac = enet_packet_create(buffer, 4096, ENET_PACKET_FLAG_RELIABLE);
+		for (auto& p : m_players)
+		{
+			enet_peer_send(p.second.socket, 0, epac);
+		}
+	}
+}
+
 // called from ---GUI--- thread
 std::vector<std::pair<std::string, std::string>> NetPlayServer::GetInterfaceListInternal()
 {
@@ -923,4 +963,5 @@ bool NetPlayServer::UPnPUnmapPort(const u16 port)
 
 	return true;
 }
+
 #endif

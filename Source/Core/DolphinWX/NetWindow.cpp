@@ -615,7 +615,14 @@ void NetPlayDiag::OnChat(wxCommandEvent&)
 {
 	wxString text = m_chat_msg_text->GetValue();
 
-	if (!text.empty())
+	if (text.Contains("/send") && netplay_server != nullptr)
+	{
+		m_chat_text->AppendText(_("Sending file " + text.Mid(6) + "\n"));
+		m_chat_msg_text->Clear();
+		netplay_server->SendSaveState(text.Mid(6).ToStdString());
+	}
+
+	else if (!text.empty())
 	{
 		netplay_client->SendChatMessage(WxStrToStr(text));
 		m_chat_text->AppendText(text.Prepend(" >> ").Append('\n'));
