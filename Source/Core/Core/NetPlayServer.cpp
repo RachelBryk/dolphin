@@ -204,6 +204,7 @@ void NetPlayServer::ThreadFunc()
 			break;
 			}
 		}
+		Common::SleepCurrentThread(1);
 	}
 
 	// close listening socket and client sockets
@@ -965,5 +966,4 @@ bool NetPlayServer::UPnPUnmapPort(const u16 port)
 
 	return true;
 }
-
 #endif
