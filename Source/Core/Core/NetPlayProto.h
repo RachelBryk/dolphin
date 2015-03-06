@@ -19,6 +19,7 @@ struct NetSettings
 	bool m_OCEnable;
 	float m_OCFactor;
 	TEXIDevices m_EXIDevice[2];
+	bool m_NetplayHash;
 };
 
 extern NetSettings g_NetPlaySettings;
@@ -30,7 +31,7 @@ struct Rpt : public std::vector<u8>
 
 typedef std::vector<u8> NetWiimote;
 
-#define NETPLAY_VERSION  "Dolphin NetPlay 2014-01-08"
+#define NETPLAY_VERSION  "Dolphin NetPlay 2015-03-06"
 
 extern int g_netplay_initial_gctime;
 
@@ -53,6 +54,9 @@ enum
 	NP_MSG_CHANGE_GAME = 0xA1,
 	NP_MSG_STOP_GAME = 0xA2,
 	NP_MSG_DISABLE_GAME = 0xA3,
+
+	NP_MSG_MEM_HASH = 0xB0,
+	NP_MSG_MEM_HASH_MISMATCH = 0xB1,
 
 	NP_MSG_READY = 0xD0,
 	NP_MSG_NOT_READY = 0xD1,

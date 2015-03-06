@@ -112,6 +112,7 @@ private:
 	wxTextCtrl*   m_chat_msg_text;
 	wxCheckBox*   m_memcard_write;
 	wxCheckBox*   m_record_chkbox;
+	wxCheckBox*   m_desync_check_chkbox;
 
 	std::string   m_selected_game;
 	wxButton*     m_game_btn;

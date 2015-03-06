@@ -2,11 +2,13 @@
 // Licensed under GPLv2
 // Refer to the license.txt file included.
 
+#include <xxhash/xxhash.h>
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/Movie.h"
 #include "Core/NetPlayClient.h"
 #include "Core/HW/EXI_DeviceIPL.h"
+#include "Core/HW/Memmap.h"
 #include "Core/HW/SI.h"
 #include "Core/HW/SI_DeviceDanceMat.h"
 #include "Core/HW/SI_DeviceGCController.h"
@@ -19,6 +21,7 @@
 static std::mutex crit_netplay_client;
 static NetPlayClient * netplay_client = nullptr;
 NetSettings g_NetPlaySettings;
+static u8 s_hash_sec = 0;
 
 // called from ---GUI--- thread
 NetPlayClient::~NetPlayClient()
@@ -382,8 +385,10 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
 			packet >> tmp;
 			g_NetPlaySettings.m_EXIDevice[1] = (TEXIDevices)tmp;
 
+			packet >> g_NetPlaySettings.m_NetplayHash;
 			packet >> g_netplay_initial_gctime;
 		}
+		s_hash_sec = 0;
 
 		m_dialog->OnMsgStartGame();
 	}
@@ -430,6 +435,21 @@ unsigned int NetPlayClient::OnData(sf::Packet& packet)
 		}
 
 		m_dialog->Update();
+	}
+	break;
+
+	case NP_MSG_MEM_HASH_MISMATCH:
+	{
+		int id;
+		u32 frame;
+		packet >> id;
+		packet >> frame;
+		std::string sID = "";
+		if (id != -1)
+			sID = StringFromFormat(" from player ID %d", id);
+
+		m_dialog->AppendChat("Possible desync detected" + sID + StringFromFormat(" on frame: %u", frame));
+		SConfig::GetInstance().m_NetplayHash = false;
 	}
 	break;
 
@@ -484,13 +504,13 @@ void NetPlayClient::ThreadFunc()
 	{
 		ENetEvent netEvent;
 		int net;
+		if (m_traversal_client)
 		{
 			std::lock_guard<std::recursive_mutex> lks(m_crit.send);
-			if (m_traversal_client)
-				m_traversal_client->HandleResends();
-			net = enet_host_service(m_client, &netEvent, 4);
+			m_traversal_client->HandleResends();
 		}
-		if (net > 0)
+		net = enet_host_service(m_client, &netEvent, 7);
+		if (netEvent.type > 0)
 		{
 			sf::Packet rpac;
 			switch (netEvent.type)
@@ -514,7 +534,6 @@ void NetPlayClient::ThreadFunc()
 				break;
 			}
 		}
-
 	}
 
 	Disconnect();
@@ -1033,6 +1052,35 @@ u8 NetPlayClient::LocalWiimoteToInGameWiimote(u8 local_pad)
 	}
 
 	return ingame_pad;
+}
+
+void NetPlayClient::HashRam()
+{
+	const int hashchunks = 64;
+	std::lock_guard<std::mutex> lk(crit_netplay_client);
+	bool bWii = SConfig::GetInstance().m_LocalCoreStartupParameter.bWii;
+
+	u64 hash = XXH64(Memory::m_pRAM + (s_hash_sec * (u64)Memory::RAM_SIZE / hashchunks), Memory::RAM_SIZE / hashchunks, 0);
+	hash ^= XXH64(Memory::m_pL1Cache, Memory::L1_CACHE_SIZE, 0);
+	if (bWii)
+	{
+		hash ^= XXH64(Memory::m_pEXRAM + (s_hash_sec * (u64)Memory::EXRAM_SIZE / hashchunks), Memory::EXRAM_SIZE / hashchunks, 0);
+	}
+	else
+	{
+		if (Memory::bFakeVMEM)
+			hash ^= XXH64(Memory::m_pFakeVMEM + (s_hash_sec * (u64)Memory::FAKEVMEM_SIZE / hashchunks), Memory::FAKEVMEM_SIZE / hashchunks, 0);
+	}
+	if (++s_hash_sec >= hashchunks)
+		s_hash_sec = 0;
+
+	sf::Packet spac;
+	spac << (MessageId)NP_MSG_MEM_HASH;
+	spac << (u32)hash;
+	spac << (u32)(hash << 32);
+	spac << (u32)Movie::g_currentFrame;
+	std::lock_guard<std::recursive_mutex> lks(netplay_client->m_crit.send);
+	netplay_client->Send(spac);
 }
 
 // stuff hacked into dolphin

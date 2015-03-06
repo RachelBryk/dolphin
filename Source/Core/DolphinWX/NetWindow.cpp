@@ -574,6 +574,10 @@ NetPlayDiag::NetPlayDiag(wxWindow* const parent, const CGameListCtrl* const game
 
 		m_memcard_write = new wxCheckBox(panel, wxID_ANY, _("Write memcards (GC)"));
 		bottom_szr->Add(m_memcard_write, 0, wxCENTER);
+
+		m_desync_check_chkbox = new wxCheckBox(panel, wxID_ANY, _("Detect Desyncs"));
+		m_desync_check_chkbox->SetValue(true);
+		bottom_szr->Add(m_desync_check_chkbox, 0, wxCENTER);
 	}
 
 	m_record_chkbox = new wxCheckBox(panel, wxID_ANY, _("Record input"));
@@ -635,6 +639,7 @@ void NetPlayDiag::GetNetSettings(NetSettings &settings)
 	settings.m_OCFactor = instance.m_OCFactor;
 	settings.m_EXIDevice[0] = instance.m_EXIDevice[0];
 	settings.m_EXIDevice[1] = instance.m_EXIDevice[1];
+	settings.m_NetplayHash = m_desync_check_chkbox->GetValue();
 }
 
 std::string NetPlayDiag::FindGame()
