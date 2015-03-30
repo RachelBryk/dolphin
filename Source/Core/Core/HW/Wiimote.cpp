@@ -39,7 +39,7 @@ void Shutdown()
 // if plugin isn't initialized, init and load config
 void Initialize(void* const hwnd, bool wait)
 {
-	// add 4 Wiimotes
+	// add 5 Wiimotes
 	if (s_config.controllers.empty())
 		for (unsigned int i = WIIMOTE_CHAN_0; i < MAX_BBMOTES; ++i)
 			s_config.controllers.push_back(new WiimoteEmu::Wiimote(i));
@@ -155,18 +155,6 @@ void DoState(u8 **ptr, PointerWrap::Mode mode)
 	PointerWrap p(ptr, mode);
 	for (unsigned int i=0; i<MAX_BBMOTES; ++i)
 		((WiimoteEmu::Wiimote*)s_config.controllers[i])->DoState(p);
-}
-
-// ___________________________________________________________________________
-// Function: EmuStateChange
-// Purpose: Notifies the plugin of a change in emulation state
-// input:    newState - The new state for the Wiimote to change to.
-// output:   none
-//
-void EmuStateChange(EMUSTATE_CHANGE newState)
-{
-	// TODO
-	WiimoteReal::StateChange(newState);
 }
 
 }

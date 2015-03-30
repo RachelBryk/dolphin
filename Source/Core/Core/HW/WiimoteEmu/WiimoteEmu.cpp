@@ -15,6 +15,7 @@
 #include "Core/HW/WiimoteEmu/MatrixMath.h"
 #include "Core/HW/WiimoteEmu/WiimoteEmu.h"
 #include "Core/HW/WiimoteEmu/WiimoteHid.h"
+#include "Core/HW/WiimoteEmu/Attachment/BalanceBoard.h"
 #include "Core/HW/WiimoteEmu/Attachment/Classic.h"
 #include "Core/HW/WiimoteEmu/Attachment/Drums.h"
 #include "Core/HW/WiimoteEmu/Attachment/Guitar.h"
@@ -277,12 +278,20 @@ Wiimote::Wiimote( const unsigned int index )
 
 	// extension
 	groups.emplace_back(m_extension = new Extension(_trans("Extension")));
-	m_extension->attachments.emplace_back(new WiimoteEmu::None(m_reg_ext));
-	m_extension->attachments.emplace_back(new WiimoteEmu::Nunchuk(m_reg_ext));
-	m_extension->attachments.emplace_back(new WiimoteEmu::Classic(m_reg_ext));
-	m_extension->attachments.emplace_back(new WiimoteEmu::Guitar(m_reg_ext));
-	m_extension->attachments.emplace_back(new WiimoteEmu::Drums(m_reg_ext));
-	m_extension->attachments.emplace_back(new WiimoteEmu::Turntable(m_reg_ext));
+	//if (index < 4)
+	{
+		m_extension->attachments.emplace_back(new WiimoteEmu::None(m_reg_ext));
+		m_extension->attachments.emplace_back(new WiimoteEmu::Nunchuk(m_reg_ext));
+		m_extension->attachments.emplace_back(new WiimoteEmu::Classic(m_reg_ext));
+		m_extension->attachments.emplace_back(new WiimoteEmu::Guitar(m_reg_ext));
+		m_extension->attachments.emplace_back(new WiimoteEmu::Drums(m_reg_ext));
+		m_extension->attachments.emplace_back(new WiimoteEmu::Turntable(m_reg_ext));
+		m_extension->attachments.emplace_back(new WiimoteEmu::BalanceBoard(m_reg_ext));
+	}
+	//else
+	{
+//		m_extension->attachments.emplace_back(new WiimoteEmu::BalanceBoard(m_reg_ext));
+	}
 
 	m_extension->settings.emplace_back(new ControlGroup::Setting(_trans("Motion Plus"), 0, 0, 1));
 
@@ -581,9 +590,34 @@ void Wiimote::GetExtData(u8* const data)
 {
 	m_extension->GetState(data);
 
+	u8 size;
+	switch (m_extension->active_extension)
+	{
+		case 1:
+			size = sizeof(wm_nc);
+			break;
+		case 2:
+			size = sizeof(wm_classic_extension);
+			break;
+		case 3:
+			size = sizeof(wm_guitar_extension);
+			break;
+		case 4:
+			size = sizeof(wm_drums_extension);
+			break;
+		case 5:
+			size = sizeof(wm_turntable_extension);
+			break;
+		case 6:
+			size = sizeof(wm_bb_extension);
+		default:
+			size = sizeof(wm_nc);
+			break;
+	}
+
 	// i dont think anything accesses the extension data like this, but ill support it. Indeed, commercial games don't do this.
 	// i think it should be unencrpyted in the register, encrypted when read.
-	memcpy(m_reg_ext.controller_data, data, sizeof(wm_nc)); // TODO: Should it be nc specific?
+	memcpy(m_reg_ext.controller_data, data, size);
 
 	// motionplus pass-through modes
 	if (m_motion_plus_active)
@@ -623,7 +657,7 @@ void Wiimote::GetExtData(u8* const data)
 	}
 
 	if (0xAA == m_reg_ext.encryption)
-		WiimoteEncrypt(&m_ext_key, data, 0x00, sizeof(wm_nc));
+		WiimoteEncrypt(&m_ext_key, data, 0x00, size);
 }
 
 void Wiimote::Update()

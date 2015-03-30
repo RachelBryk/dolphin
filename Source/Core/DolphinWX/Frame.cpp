@@ -459,7 +459,7 @@ CFrame::CFrame(wxFrame* parent,
 	m_LogWindow->Hide();
 	m_LogWindow->Disable();
 
-	for (int i = 0; i < 8; ++i)
+	for (int i = 0; i < 9; ++i)
 		g_TASInputDlg[i] = new TASInputDlg(this);
 
 	Movie::SetGCInputManip(GCTASManipFunction);

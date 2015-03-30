@@ -294,6 +294,15 @@ struct wm_turntable_extension
 	};
 };
 
+struct wm_bb_extension
+{
+	u16 topright;
+	u16 bottomright;
+	u16 topleft;
+	u16 bottomleft;
+	u8 unknown[11];
+};
+
 struct wm_motionplus_data
 {
 	// yaw1, roll1, pitch1: Bits 0-7

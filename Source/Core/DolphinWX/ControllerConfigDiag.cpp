@@ -230,7 +230,7 @@ wxStaticBoxSizer* ControllerConfigDiag::CreateWiimoteConfigSizer()
 	}
 	wiimote_control_section->Add(wiimote_sizer, 1, wxEXPAND, 5 );
 
-	// Disable some controls when emulation is running
+	/*// Disable some controls when netplay is running
 	if (Core::GetState() != Core::CORE_UNINITIALIZED && NetPlay::IsNetPlayRunning())
 	{
 		for (int i = 0; i < 4; ++i)
@@ -238,7 +238,7 @@ wxStaticBoxSizer* ControllerConfigDiag::CreateWiimoteConfigSizer()
 			wiimote_label[i]->Disable();
 			wiimote_source_ch[i]->Disable();
 		}
-	}
+	}*/
 
 	wiimote_group->Add(wiimote_control_section, 0, wxEXPAND | wxALL);
 	wiimote_group->AddSpacer(5);
@@ -254,28 +254,38 @@ wxStaticBoxSizer* ControllerConfigDiag::CreateWiimoteConfigSizer()
 wxStaticBoxSizer* ControllerConfigDiag::CreateBalanceBoardSizer()
 {
 	wxStaticBoxSizer* const bb_group = new wxStaticBoxSizer(wxHORIZONTAL, this, _("Balance Board"));
-	wxFlexGridSizer* const bb_sizer = new wxFlexGridSizer(1, 5, 5);
+	wxFlexGridSizer* const bb_sizer = new wxFlexGridSizer(2, 5, 5);
 	int source_ctrl_id =  wxWindow::NewControlId();
 
 	m_wiimote_index_from_ctrl_id.insert(std::pair<wxWindowID, unsigned int>(source_ctrl_id, WIIMOTE_BALANCE_BOARD));
 
-	static const std::array<wxString, 2> src_choices = {{
-		("None"), _("Real Balance Board")
+	static const std::array<wxString, 3> src_choices = {{
+		("None"), _("Emulated Balance Board"), _("Real Balance Board")
 	}};
 
 	wxChoice* const bb_source = new wxChoice(this, source_ctrl_id, wxDefaultPosition, wxDefaultSize, src_choices.size(), src_choices.data());
 	bb_source->Bind(wxEVT_CHOICE, &ControllerConfigDiag::SelectSource, this);
 
 	m_orig_wiimote_sources[WIIMOTE_BALANCE_BOARD] = g_wiimote_sources[WIIMOTE_BALANCE_BOARD];
-	bb_source->Select(m_orig_wiimote_sources[WIIMOTE_BALANCE_BOARD] ? 1 : 0);
+	bb_source->Select(m_orig_wiimote_sources[WIIMOTE_BALANCE_BOARD]);
+
+	int config_bt_id = wxWindow::NewControlId();
+	m_wiimote_index_from_conf_bt_id.insert(std::pair<wxWindowID, unsigned int>(config_bt_id, 4));
+	wiimote_configure_bt[4] = new wxButton(this, config_bt_id, _("Configure"));
+	wiimote_configure_bt[4]->Bind(wxEVT_BUTTON, &ControllerConfigDiag::ConfigEmulatedWiimote, this);
 
 	bb_sizer->Add(bb_source, 0, wxALIGN_CENTER_VERTICAL);
+	bb_sizer->Add(wiimote_configure_bt[4]);
 
 	bb_group->Add(bb_sizer, 1, wxEXPAND, 5);
 
+	if (!(SConfig::GetInstance().m_LocalCoreStartupParameter.bWii || Core::GetState() == Core::CORE_UNINITIALIZED)
+		|| (m_orig_wiimote_sources[4] != WIIMOTE_SRC_EMU && m_orig_wiimote_sources[4] != WIIMOTE_SRC_HYBRID))
+			wiimote_configure_bt[4]->Disable();
+
 	// Disable when emulation is running.
-	if (Core::GetState() != Core::CORE_UNINITIALIZED)
-		bb_source->Disable();
+	//if (Core::GetState() != Core::CORE_UNINITIALIZED)
+	//	bb_source->Disable();
 
 	return bb_group;
 }
@@ -412,18 +422,11 @@ void ControllerConfigDiag::SelectSource(wxCommandEvent& event)
 	// Revert if the dialog is canceled.
 	int index = m_wiimote_index_from_ctrl_id[event.GetId()];
 
-	if (index != WIIMOTE_BALANCE_BOARD)
-	{
-		WiimoteReal::ChangeWiimoteSource(index, event.GetInt());
-		if (g_wiimote_sources[index] != WIIMOTE_SRC_EMU && g_wiimote_sources[index] != WIIMOTE_SRC_HYBRID)
-			wiimote_configure_bt[index]->Disable();
-		else
-			wiimote_configure_bt[index]->Enable();
-	}
+	WiimoteReal::ChangeWiimoteSource(index, event.GetInt());
+	if (g_wiimote_sources[index] != WIIMOTE_SRC_EMU && g_wiimote_sources[index] != WIIMOTE_SRC_HYBRID)
+		wiimote_configure_bt[index]->Disable();
 	else
-	{
-		WiimoteReal::ChangeWiimoteSource(index, event.GetInt() ? WIIMOTE_SRC_REAL : WIIMOTE_SRC_NONE);
-	}
+		wiimote_configure_bt[index]->Enable();
 }
 
 void ControllerConfigDiag::RevertSource()

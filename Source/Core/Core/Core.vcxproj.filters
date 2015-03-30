@@ -734,6 +734,7 @@
     <ClCompile Include="PowerPC\Jit64Common\Jit64AsmCommon.cpp">
       <Filter>PowerPC\Jit64Common</Filter>
     </ClCompile>
+    <ClCompile Include="HW\WiimoteEmu\Attachment\BalanceBoard.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BootManager.h" />
@@ -1010,9 +1011,6 @@
     <ClInclude Include="HW\WiimoteEmu\Attachment\Attachment.h">
       <Filter>HW %28Flipper/Hollywood%29\Wiimote\Emu\Attachment</Filter>
     </ClInclude>
-    <ClInclude Include="HW\WiimoteEmu\Attachment\Classic.h">
-      <Filter>HW %28Flipper/Hollywood%29\Wiimote\Emu\Attachment</Filter>
-    </ClInclude>
     <ClInclude Include="HW\WiimoteEmu\Attachment\Drums.h">
       <Filter>HW %28Flipper/Hollywood%29\Wiimote\Emu\Attachment</Filter>
     </ClInclude>
@@ -1248,6 +1246,10 @@
     <ClInclude Include="PowerPC\Jit64Common\Jit64AsmCommon.h">
       <Filter>PowerPC\Jit64Common</Filter>
     </ClInclude>
+    <ClInclude Include="HW\WiimoteEmu\Attachment\Classic.h">
+      <Filter>HW %28Flipper/Hollywood%29\Wiimote\Emu\Attachment</Filter>
+    </ClInclude>
+    <ClInclude Include="HW\WiimoteEmu\Attachment\BalanceBoard.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

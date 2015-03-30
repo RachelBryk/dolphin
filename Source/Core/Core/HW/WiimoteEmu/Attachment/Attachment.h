@@ -16,7 +16,7 @@ public:
 	Attachment(const char* const _name, WiimoteEmu::ExtensionReg& _reg);
 
 	virtual void GetState(u8* const data) {}
-	void Reset();
+	virtual void Reset();
 	std::string GetName() const override;
 
 	const char* const         name;

@@ -79,7 +79,7 @@ static u32 s_DSPcoefHash = 0;
 static bool s_bRecordingFromSaveState = false;
 static bool s_bPolled = false;
 
-static std::string s_InputDisplay[8];
+static std::string s_InputDisplay[9];
 
 static GCManipFunction gcmfunc = nullptr;
 static WiiManipFunction wiimfunc = nullptr;

@@ -169,7 +169,7 @@ void Wiimote::HidOutputReport(const wm_report* const sr, const bool send_ack)
    The last byte is the success code 00. */
 void Wiimote::SendAck(u8 _reportID)
 {
-	u8 data[6];
+	u8 data[23];
 
 	data[0] = 0xA1;
 	data[1] = WM_ACK_DATA;
@@ -185,6 +185,8 @@ void Wiimote::SendAck(u8 _reportID)
 
 void Wiimote::HandleExtensionSwap()
 {
+	//if (m_index == 4 && m_extension->active_extension !=6 && m_extension->switch_extension !=6)
+	//	m_extension->switch_extension = 6;
 	// handle switch extension
 	if (m_extension->active_extension != m_extension->switch_extension)
 	{
@@ -246,6 +248,7 @@ void Wiimote::WriteData(const wm_write_data* const wd)
 {
 	u32 address = Common::swap24(wd->address);
 
+	ERROR_LOG(WIIMOTE, "add: %x, write: %s", address, ArrayToString(wd->data, (u32)wd->size, 50).c_str());
 	// ignore the 0x010000 bit
 	address &= ~0x010000;
 

@@ -164,6 +164,7 @@
     <ClCompile Include="HW\VideoInterface.cpp" />
     <ClCompile Include="HW\Wiimote.cpp" />
     <ClCompile Include="HW\WiimoteEmu\Attachment\Attachment.cpp" />
+    <ClCompile Include="HW\WiimoteEmu\Attachment\BalanceBoard.cpp" />
     <ClCompile Include="HW\WiimoteEmu\Attachment\Classic.cpp" />
     <ClCompile Include="HW\WiimoteEmu\Attachment\Drums.cpp" />
     <ClCompile Include="HW\WiimoteEmu\Attachment\Guitar.cpp" />
@@ -370,6 +371,7 @@
     <ClInclude Include="HW\VideoInterface.h" />
     <ClInclude Include="HW\Wiimote.h" />
     <ClInclude Include="HW\WiimoteEmu\Attachment\Attachment.h" />
+    <ClInclude Include="HW\WiimoteEmu\Attachment\BalanceBoard.h" />
     <ClInclude Include="HW\WiimoteEmu\Attachment\Classic.h" />
     <ClInclude Include="HW\WiimoteEmu\Attachment\Drums.h" />
     <ClInclude Include="HW\WiimoteEmu\Attachment\Guitar.h" />

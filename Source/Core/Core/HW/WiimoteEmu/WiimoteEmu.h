@@ -52,19 +52,21 @@ struct ExtensionReg
 
 	// address 0x20
 	u8 calibration[0x10];
-	u8 unknown3[0x10];
+	//u8 unknown3[0x10]; //0x30
+	u8 calibration2[0x0C]; // for balance board
+	u8 unknown3[0x04];
 
 	// address 0x40
-	u8 encryption_key[0x10];
-	u8 unknown4[0xA0];
+	u8 encryption_key[0x10]; //0x40
+	u8 unknown4[0xA0]; //0x50
 
 	// address 0xF0
 	u8 encryption;
-	u8 unknown5[0x9];
+	u8 unknown5[0x09]; //0xF1
 
 	// address 0xFA
 	u8 constant_id[6];
-};
+};static_assert(sizeof(ExtensionReg) == 0x100, "wrong size ext");
 
 void EmulateShake(AccelData* const accel_data
 	  , ControllerEmu::Buttons* const buttons_group

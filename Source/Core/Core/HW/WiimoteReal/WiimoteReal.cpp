@@ -239,7 +239,7 @@ bool Wiimote::Write()
 			{
 				m_last_audio_report.Update();
 			}
-
+			WARN_LOG(WIIMOTE, "write: %s", ArrayToString(rpt.data(), (u32)rpt.size(), 50).c_str());
 			m_write_reports.Pop();
 			return true;
 		}
@@ -839,13 +839,6 @@ void Update(int _WiimoteNumber)
 	{
 		Host_ConnectWiimote(_WiimoteNumber, false);
 	}
-}
-
-void StateChange(EMUSTATE_CHANGE newState)
-{
-	//std::lock_guard<std::recursive_mutex> lk(g_refresh_lock);
-
-	// TODO: disable/enable auto reporting, maybe
 }
 
 bool IsValidBluetoothName(const std::string& name)
